@@ -42,6 +42,7 @@ from invenio.search_engine import guess_primary_collection_of_a_record, \
 from invenio.webcomment import get_mini_reviews
 from invenio.websearchadminlib import get_detailed_page_tabs,\
                                       get_detailed_page_tabs_counts
+from invenio.bibdocfile import BibRecDocs
 from invenio.search_engine_utils import get_fieldvalues
 from invenio.bibrank_downloads_similarity import register_page_view_event
 
@@ -127,6 +128,7 @@ def request_record(f):
 
         def _format_record(recid, of='hd', user_info=current_user, *args, **kwargs):
             return print_record(recid, format=of, user_info=user_info, *args, **kwargs)
+            #format_record(recID, of=of, ln=ln, verbose=0, search_pattern='', on_the_fly=False)
 
         @register_template_context_processor
         def record_context():
@@ -137,7 +139,8 @@ def request_record(f):
                         get_mini_reviews=lambda *args, **kwargs:
                         get_mini_reviews(*args, **kwargs).decode('utf8'),
                         collection=collection,
-                        format_record=_format_record
+                        format_record=_format_record,
+                        files=BibRecDocs(recid, human_readable=True),
                         )
         return f(recid, *args, **kwargs)
     return decorated
