@@ -120,6 +120,23 @@ class InvenioBlueprint(Blueprint):
             self.menubuilder_map[endpoint] = args
         return decorator
 
+    def invenio_errorpage(self, exc_list=(Exception),
+            template='invenio_error.html'):
+        """
+        Decorator to catch exceptions and render a nice error page for the
+        end-user.
+        """
+        def decorator(f):
+            @wraps(f)
+            def inner(*args, **kwargs):
+                try:
+                    return f(*args, **kwargs)
+                except exc_list, e:
+                    ctx = {'error': e, 'error_class': e.__class__.__name__}
+                    return render_template(template, **ctx)
+            return inner
+        return decorator
+
     def invenio_templated(self, template=None, stream=False,
                           mimetype='text/html'):
         """
