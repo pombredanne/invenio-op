@@ -418,6 +418,8 @@ def create_invenio_flask_app(**kwargs_config):
     _app.jinja_env.add_extension(CollectionExtension)
     _app.jinja_env.add_extension(LangExtension)
     _app.jinja_env.add_extension('jinja2.ext.do')
+    _app.jinja_env.add_extension('jinja2.ext.i18n')
+    _app.jinja_env.install_null_translations(newstyle=True)
 
     # Let's extend application with custom template filters.
     extend_application_template_filters(_app)
