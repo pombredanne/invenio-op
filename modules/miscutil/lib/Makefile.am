@@ -122,6 +122,7 @@ pylib_DATA = __init__.py \
              sqlalchemyutils.py \
              sqlalchemyutils_mysql.py \
              testutils.py \
+             testutils_manager.py \
              testutils_regression_tests.py \
              textutils.py \
              textutils_unit_tests.py \
