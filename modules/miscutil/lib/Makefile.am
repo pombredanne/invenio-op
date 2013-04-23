@@ -26,6 +26,7 @@ pylib_DATA = __init__.py \
              cache_manager.py \
              celery.py \
              celery_config.py \
+             celery_manager.py \
              celery_tasks.py \
              celery_unit_tests.py \
              config_manager.py \
