@@ -30,7 +30,7 @@ MJV = 2.1
 MATHJAX = http://invenio-software.org/download/mathjax/MathJax-v$(MJV).zip
 
 # current CKeditor version
-CKV = 3.6.6
+CKV = 4.1.1
 CKEDITOR = ckeditor_$(CKV).zip
 
 # current MediaElement.js version
@@ -255,8 +255,8 @@ install-ckeditor-plugin:
 	rm -rf /tmp/invenio-ckeditor-plugin
 	mkdir /tmp/invenio-ckeditor-plugin
 	(cd /tmp/invenio-ckeditor-plugin && \
-	wget 'http://invenio-software.org/download/ckeditor/$(CKEDITOR)' && \
-	unzip -u -d ${prefix}/var/www $(CKEDITOR)) && \
+	wget 'http://download.cksource.com/CKEditor/CKEditor/CKEditor%204.1.1/ckeditor_4.1.1_standard.zip' && \
+	unzip -u -d ${prefix}/var/www ckeditor_4.1.1_standard.zip) && \
 	find ${prefix}/var/www/ckeditor/ -depth -name '_*' -exec rm -rf {} \; && \
 	find ${prefix}/var/www/ckeditor/ckeditor* -maxdepth 0 ! -name "ckeditor.js" -exec rm -r {} \; && \
 	rm -fr /tmp/invenio-ckeditor-plugin
