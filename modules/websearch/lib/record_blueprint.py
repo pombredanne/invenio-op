@@ -132,6 +132,8 @@ def request_record(f):
 
         @register_template_context_processor
         def record_context():
+            files = [f for f in BibRecDocs(recid, human_readable=True).list_latest_files(list_hidden=False) if not f.is_icon() and f.is_restricted(current_user)[0] == 0]
+
             return dict(recid=recid,
                         record=record,
                         tabs=tabs,
@@ -140,7 +142,7 @@ def request_record(f):
                         get_mini_reviews(*args, **kwargs).decode('utf8'),
                         collection=collection,
                         format_record=_format_record,
-                        files=BibRecDocs(recid, human_readable=True),
+                        files=files,
                         )
         return f(recid, *args, **kwargs)
     return decorated
