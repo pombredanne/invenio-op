@@ -44,6 +44,7 @@ from invenio.urlutils import make_canonical_urlargd, create_url, create_html_lin
 from invenio.htmlutils import escape_html, nmtoken_from_string
 from invenio.messages import gettext_set_language, language_list_long
 from invenio.websession_config import CFG_WEBSESSION_GROUP_JOIN_POLICY
+from urllib import urlencode
 class Template:
     def tmpl_back_form(self, ln, message, url, link):
         """
@@ -476,7 +477,7 @@ class Template:
 
         # load the right message language
         _ = gettext_set_language(ln)
-        out = "<p>" + _("If you have lost the password for your %(sitename)s %(x_fmt_open)sinternal account%(x_fmt_close)s, then please enter your email address in the following form in order to have a password reset link emailed to you.") % {'x_fmt_open' : '<em>', 'x_fmt_close' : '</em>', 'sitename' : CFG_SITE_NAME_INTL[ln]} + "</p>"
+        out = "<p>" + _("If you have lost the password for your %(sitename)s account, please enter your email address in the following form in order to have a password reset link emailed to you.") % {'x_fmt_open' : '<em>', 'x_fmt_close' : '</em>', 'sitename' : CFG_SITE_NAME_INTL[ln]} + "</p>"
 
         out += """
           <blockquote>
@@ -490,7 +491,7 @@ class Template:
               </td>
             </tr>
             <tr><td>&nbsp;</td>
-              <td><input class="formbutton" type="submit" value="%(send)s" /></td>
+              <td><button class="btn" type="submit">%(send)s</button></td>
             </tr>
           </table>
 
@@ -501,14 +502,6 @@ class Template:
             'email' : _("Email address"),
             'send' : _("Send password reset link"),
           }
-
-        if CFG_CERN_SITE:
-            out += "<p>" + _("If you have been using the %(x_fmt_open)sCERN login system%(x_fmt_close)s, then you can recover your password through the %(x_url_open)sCERN authentication system%(x_url_close)s.") % {'x_fmt_open' : '<em>', 'x_fmt_close' : '</em>', 'x_url_open' : '<a href="https://cern.ch/lightweightregistration/ResetPassword.aspx%s">' \
-            % make_canonical_urlargd({'lf': 'auth', 'returnURL' : CFG_SITE_SECURE_URL + '/youraccount/login?ln='+ln}, {}), 'x_url_close' : '</a>'} + " "
-        else:
-            out += "<p>" + _("Note that if you have been using an external login system, then we cannot do anything and you have to ask there.") + " "
-        out += _("Alternatively, you can ask %s to change your login system from external to internal.") % ("""<a href="mailto:%(email)s">%(email)s</a>""" % { 'email' : CFG_SITE_SUPPORT_EMAIL }) + "</p>"
-
 
         return out
 
@@ -801,7 +794,7 @@ class Template:
 
 %(intro2)s
 
-<%(link)s>
+%(link)s
 
 %(outro)s
 
@@ -815,11 +808,11 @@ class Template:
                     }
                 ),
             'intro2' : _("If you want to reset the password for this account, please go to:"),
-            'link' : "%s/youraccount/access%s" %
-                (CFG_SITE_SECURE_URL, make_canonical_urlargd({
+            'link' : "%s/youraccount/access?%s" %
+                (CFG_SITE_SECURE_URL, urlencode({
                     'ln' : ln,
                     'mailcookie' : reset_key
-                }, {})),
+                })),
             'outro' : _("in order to confirm the validity of this request."),
             'outro2' : _("Please note that this URL will remain valid for about %(days)s days only.") % {'days': CFG_WEBSESSION_RESET_PASSWORD_EXPIRE_IN_DAYS},
         }
@@ -1079,7 +1072,7 @@ class Template:
 <tr><td align="right"><strong><label for="password2">%(type_it_again)s:</label></strong></td>
 <td><input type="password" name="password2" id="password2" value="" /></td></tr>
 <tr><td align="center" colspan="2">
-<input class="formbutton" type="submit" name="action" value="%(set_new_password)s" />
+<input class="btn" type="submit" name="action" value="%(set_new_password)s" />
 </td></tr>
 </table>
 </form>""" % {
