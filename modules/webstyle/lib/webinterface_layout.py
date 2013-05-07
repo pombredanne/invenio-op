@@ -320,7 +320,7 @@ class WebInterfaceInvenio(WebInterfaceSearchInterfacePages):
                    'person',
                    'admin2',
                    'linkbacks',
-                   'author',
+                   #'author',
                    'textmining',
                    'goto',
                ] + test_exports + openaire_exports
@@ -358,7 +358,7 @@ class WebInterfaceInvenio(WebInterfaceSearchInterfacePages):
     person = WebInterfaceBibAuthorIDPages()
     linkbacks = WebInterfaceRecentLinkbacksPages()
     #redirects author to the new webauthor
-    author = WebInterfaceWebAuthorPages()
+    #author = WebInterfaceWebAuthorPages()
     #author = WebInterfaceAuthorPages()
     textmining = WebInterfaceDocExtract()
     yourcomments = WebInterfaceYourCommentsPages()
