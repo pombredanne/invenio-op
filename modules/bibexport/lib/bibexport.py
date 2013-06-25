@@ -36,6 +36,8 @@ Usage: %s [options]
 
 __revision__ = "$Id$"
 
+from invenio.flaskshell import *
+
 import os
 import sys
 from ConfigParser import ConfigParser
