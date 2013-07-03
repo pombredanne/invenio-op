@@ -271,7 +271,7 @@ class UserInfo(CombinedMultiDict, UserMixin):
         return acc_authorize_action(self, name)[0] == 0
 
     def is_active(self):
-        return not self.is_guest
+        return not self.is_guest and self.get('note', '') == "1"
 
     @property
     def is_guest(self):

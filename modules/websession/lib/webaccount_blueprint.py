@@ -63,11 +63,19 @@ def update_login(nickname, password=None, remember_me=False):
     if password is not None:
         where.append(User.password == password)
     user = User.query.filter(*where).one()
-    login_user(UserInfo(user.id), remember=remember_me)
+    if not user.is_active():
+        if user.note == "0":
+            raise AuthenticationWarning("Your account must first be activated by an administrator before you can use it.")
+        elif user.note == "2":
+            raise AuthenticationWarning("You account has not been activated. An email message containing an account activation key was sent to you upon registration.")
+    login_user(user.get_id(), remember=remember_me)
     return user
 
 
-@blueprint.route('/login/', methods=['GET', 'POST'])
+class AuthenticationWarning(Exception):
+    pass
+
+@blueprint.route('/login', methods=['GET', 'POST'])
 @blueprint.invenio_wash_urlargd({'nickname': (unicode, None),
                                  'password': (unicode, None),
                                  'login_method': (wash_login_method, 'Local'),
@@ -128,7 +136,8 @@ def login(nickname=None, password=None, login_method=None, action='',
                     referer = referer.replace(CFG_SITE_URL, CFG_SITE_SECURE_URL)
                     return redirect(referer)
                 return redirect('/')
-
+    except AuthenticationWarning, e:
+        flash(unicode(e), "warning")
     except:
         flash(_("Problem with login."), "error")
 

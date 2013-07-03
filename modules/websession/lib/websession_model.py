@@ -92,7 +92,7 @@ class User(db.Model):
         return True if self.email else False
 
     def is_active(self):
-        return True
+        return self.note == "1" and not self.is_guest()
 
 
 class Usergroup(db.Model):
