@@ -303,6 +303,28 @@ class InvenioBlueprint(Blueprint):
         f._force_https = True
         return login_required(f)
 
+    def invenio_api_key_authenticated(self, f):
+        """
+        Decorator: This requires request to contain a valid api_key in order to
+        authenticate user. Otherwise it returns error 401.
+        """
+        def authenticate_key(fn):
+            @wraps(fn)
+            def auth_key(*args, **kwargs):
+                if 'apikey' in request.values:
+                    from invenio.web_api_key_model import WebAPIKey
+                    from invenio.webuser_flask import login_user
+
+                    user_id = WebAPIKey.acc_get_uid_from_request()
+                    if user_id == -1:
+                        abort(401)
+                    login_user(user_id)
+                else:
+                    abort(401)
+                return fn(*args, **kwargs)
+            return auth_key
+        return authenticate_key(f)
+
     def invenio_authorized(self, action, **params):
         """
         Decorator: This checks is current user is authorized to the action.
