@@ -4598,7 +4598,7 @@ def get_record(recid):
 
 def print_record(recID, format='hb', ot='', ln=CFG_SITE_LANG, decompress=zlib.decompress,
                  search_pattern=None, user_info=None, verbose=0, sf='', so='d',
-                 sp='', rm='', brief_links=True):
+                 sp='', rm='', brief_links=True, **ctx):
     """
     Prints record 'recID' formatted according to 'format'.
 
@@ -4655,7 +4655,7 @@ def print_record(recID, format='hb', ot='', ln=CFG_SITE_LANG, decompress=zlib.de
                 out += ' ' + _("The record %d replaces it." % merged_recid)
         else:
             out += call_bibformat(recID, format, ln, search_pattern=search_pattern,
-                                  user_info=user_info, verbose=verbose)
+                                  user_info=user_info, verbose=verbose, extra_context=ctx)
 
             # at the end of HTML brief mode, print the "Detailed record" functionality:
             if brief_links and format.lower().startswith('hb') and \
@@ -4968,7 +4968,7 @@ def print_record(recID, format='hb', ot='', ln=CFG_SITE_LANG, decompress=zlib.de
 
     return out
 
-def call_bibformat(recID, format="HD", ln=CFG_SITE_LANG, search_pattern=None, user_info=None, verbose=0):
+def call_bibformat(recID, format="HD", ln=CFG_SITE_LANG, search_pattern=None, user_info=None, verbose=0, extra_context={}):
     """
     Calls BibFormat and returns formatted record.
 
@@ -4993,7 +4993,8 @@ def call_bibformat(recID, format="HD", ln=CFG_SITE_LANG, search_pattern=None, us
                          ln=ln,
                          search_pattern=keywords,
                          user_info=user_info,
-                         verbose=verbose)
+                         verbose=verbose,
+                         extra_context=extra_context)
 
     if CFG_WEBSEARCH_FULLTEXT_SNIPPETS and user_info and \
            'fulltext' in user_info['uri'].lower():

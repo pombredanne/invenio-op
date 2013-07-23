@@ -60,7 +60,7 @@ import sys
 ##
 
 def format_record(recID, of, ln=CFG_SITE_LANG, verbose=0, search_pattern=None,
-                  xml_record=None, user_info=None, on_the_fly=False):
+                  xml_record=None, user_info=None, on_the_fly=False, extra_context={}):
     """
     Format a record in given output format.
 
@@ -171,7 +171,8 @@ def format_record(recID, of, ln=CFG_SITE_LANG, verbose=0, search_pattern=None,
                                               verbose=verbose,
                                               search_pattern=search_pattern,
                                               xml_record=xml_record,
-                                              user_info=user_info)
+                                              user_info=user_info,
+                                              extra_context=extra_context)
         if of.lower() == 'xm':
             out = filter_hidden_fields(out, user_info)
         return out
