@@ -269,13 +269,12 @@ def collection_breadcrumbs(collection, endpoint=None):
 @blueprint.invenio_wash_urlargd({'p': (unicode, ''),
                                  'f': (unicode, None),
                                  'of': (unicode, 'hb'),
-                                 'so': (unicode, None),
+                                 'so': (unicode, 'd'),
                                  'rm': (unicode, None),
                                  'rg': (int, 10),
                                  'jrec': (int, 1)})
 @check_collection(default_collection=True)
 def browse(collection, p, f, of, so, rm, rg, jrec):
-
     from invenio.websearch_webinterface import wash_search_urlargd
     argd = argd_orig = wash_search_urlargd(request.args)
 
@@ -342,14 +341,13 @@ def rss(collection, p, jrec, so, rm):
 @blueprint.invenio_set_breadcrumb(_('Search results'))
 @blueprint.invenio_wash_urlargd({'p': (unicode, ''),
                                  'of': (unicode, 'hb'),
-                                 'so': (unicode, None),
+                                 'so': (unicode, 'd'),
                                  'rm': (unicode, None)})
 @check_collection(default_collection=True)
 def search(collection, p, of, so, rm):
     """
     Renders search pages.
     """
-
     if 'action_browse' in request.args \
             or request.args.get('action', '') == 'browse':
         return browse()
@@ -425,7 +423,7 @@ def facet(name, qid):
 @blueprint.route('/results/<qid>', methods=['GET', 'POST'])
 @blueprint.invenio_wash_urlargd({'p': (unicode, ''),
                                  'of': (unicode, 'hb'),
-                                 'so': (unicode, None),
+                                 'so': (unicode, 'd'),
                                  'rm': (unicode, None)})
 def results(qid, p, of, so, rm):
     """
