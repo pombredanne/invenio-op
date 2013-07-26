@@ -43,7 +43,7 @@ DEBUG = CFG_DEVEL_SITE > 0
 class BibWorkflowEngine(GenericWorkflowEngine):
 
     def __init__(self, name="Default workflow", uuid=None, curr_obj=0,
-                 workflow_object=None, id_user=0, module_name="Unknown"):
+                 workflow_object=None, id_user=0, module_name="Unknown", **kwargs):
         self.db_obj = None
         if isinstance(workflow_object, Workflow):
             self.db_obj = workflow_object
@@ -364,4 +364,4 @@ BibWorkflowEngine
 
     def set_extra_data_params(self, **kwargs):
         for key, value in kwargs.iteritems():
-            self.extra_data_set(key=key, value=value)
+            self.extra_data['key']=value
