@@ -43,8 +43,8 @@ def task_b(obj, eng):
     """Function task_b docstring"""
     eng.log.info("executing task b")
     if obj.get_data()['data'] < 20:
-        obj.change_status(CFG_OBJECT_STATUS.ERROR)
-        eng.log.info("Object status %s" % (obj.db_obj.status,))
+        obj.changeStatus(CFG_OBJECT_STATUS.ERROR)
+        eng.log.info("Object status %s" % (obj.status,))
         eng.log.info("data < 20")
         obj.add_task_result("task_b", {'a': 12, 'b': 13, 'c': 14})
         try:

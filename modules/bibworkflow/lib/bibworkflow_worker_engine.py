@@ -33,7 +33,7 @@ def run_worker(wname, data, **kwargs):
     Data can be specified as list of objects or
     single id of WfeObject/BibWorkflowObjects.
     """
-    wfe = BibWorkflowEngine(wname)
+    wfe = BibWorkflowEngine(wname, **kwargs)
     wfe.set_workflow_by_name(wname)
     wfe.set_extra_data_params(**kwargs)
     wfe.set_counter_initial(len(data))
@@ -57,7 +57,7 @@ def restart_worker(wid, **kwargs):
 
     workflow = Workflow.query.filter(Workflow.uuid == wid).first()
 
-    wfe = BibWorkflowEngine(workflow.name)
+    wfe = BibWorkflowEngine(workflow.name, **kwargs)
     wfe.set_workflow_by_name(workflow.name)
     wfe.set_extra_data_params(**kwargs)
     wfe.set_counter_initial(len(data))
@@ -89,7 +89,7 @@ def continue_worker(oid, restart_point="continue_next", **kwargs):
     workflow = Workflow.query.filter(Workflow.uuid ==
                                      data[0].id_workflow).first()
     wfe = BibWorkflowEngine(None, uuid=None, id_user=0,
-                            workflow_object=workflow)
+                            workflow_object=workflow, **kwargs)
     wfe.set_workflow_by_name(workflow.name)
     wfe.set_extra_data_params(**kwargs)
     wfe.set_counter_initial(len(data))
