@@ -24,7 +24,6 @@ from invenio.bibworkflow_tasks.test_tasks import \
     higher_than_20, \
     sleep_task, \
     simple_task
-from invenio.bibworkflow_workflow_definition import WorkflowDefinition
 
 __all__ = ['test_workflow_2']
 
