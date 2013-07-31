@@ -98,7 +98,6 @@ distances from it.
         initial_data = self.test_data
         final_data = {'data': 41}
 
-
         workflow = start(workflow_name="test_workflow",
                          data=[self.test_data], module_name="unit_tests")
 
@@ -122,7 +121,7 @@ distances from it.
         from invenio.bibworkflow_model import BibWorkflowObject
         from invenio.bibworkflow_api import start
 
-        self.test_data = [{'data': {'data': 1}}, {'data':{'data': "wwww"}}, {'data':{'data': 20}}]
+        self.test_data = [{'data': 1}, {'data': "wwww"}, {'data': 20}]
         final_data = [{'data': 19}, {'data': "wwww"}, {'data': 38}]
 
         workflow = start(workflow_name="test_workflow_2",
@@ -461,7 +460,6 @@ distances from it.
         rs = set_up_redis()
         entry1 = rs.smembers("holdingpen_sort:publisher:Desy")
         entry2 = rs.smembers("holdingpen_sort:category:lower_than_20")
-        print rs.smembers("holdingpen_sort:category")
 
         self.assertTrue(str(obj.id) in entry1)
         self.assertTrue(str(obj.id) in entry2)
