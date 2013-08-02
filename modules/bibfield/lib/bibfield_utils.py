@@ -62,7 +62,8 @@ class BibFieldDict(object):
     >>> #Filling up the dictionary
     >>> d['foo'] = {'a': 'world', 'b':'hello'}
     >>> d['a'] = [ {'b':1}, {'b':2}, {'b':3} ]
-    >>> d['_c'] = "random.randint(1,100)"
+    >>> d['_c'] = random.randint(1,100)
+    >>> d['__calculated_functions']['_c'] = "random.randint(1,100)"
 
     >>> #Accessing data inside the dictionary
     >>> d['a']
@@ -76,6 +77,7 @@ class BibFieldDict(object):
         self.rec_json = {}
         self.rec_json['__aliases'] = {}
         self.rec_json['__do_not_cache'] = []
+        self.rec_json['__calculated_functions'] = {}
         self.is_init_phase = True
 
     def __getitem__(self, key):
@@ -84,7 +86,7 @@ class BibFieldDict(object):
 
         @param key: String containing the name of the field and subfield.
         For e.g. lest work with:
-         {'a': [ {'b':1}, {'b':2}, {'b':3} ], '_c': [42, random.randint(1,100)"] }
+         {'a': [ {'b':1}, {'b':2}, {'b':3} ], '_c': 42}
          - 'a' -> All the 'a' field info
            [{'b': 1}, {'b': 2}, {'b': 3}]
          - 'a[0]' -> All the info of the first element inside 'a'
@@ -110,6 +112,9 @@ class BibFieldDict(object):
         a string, or any combination of the three depending on the value of
         field
         """
+        if not self.is_cacheable(key):
+            self.update_field_cache(key)
+
         try:
             if '.' not in key and '[' not in key:
                 dict_part = self.rec_json[key]
@@ -119,11 +124,6 @@ class BibFieldDict(object):
                     dict_part = self._get_intermediate_value(dict_part, group)
         except KeyError, err:
             return self[key.replace(err.args[0], self.rec_json['__aliases'][err.args[0]].replace('[n]', '[1:]'), 1)]
-
-        if re.search('^_[a-zA-Z0-9]', key):
-            if key in self.rec_json['__do_not_cache']:
-                self.update_field_cache(key)
-            dict_part = dict_part[0]
 
         return dict_part
 
@@ -258,14 +258,14 @@ class BibFieldDict(object):
         Note: Use this parameter only if you are running python 2.5 or higher.
         @param formatfunction: Optional parameter to format the output value.
         This parameter must be function and must handle all the possible
-        parameter types (strin, dict or list)
+        parameter types (str, dict or list)
 
         @return: The value of the field, this might be, a dictionary, a list,
         a string, or any combination of the three depending on the value of
         field. If any formating parameter is present, then the return value
         will be the formated value.
         """
-        if re.search('^_[a-zA-Z0-9]', field) and reset_cache:
+        if reset_cache:
             self.update_field_cache(field)
 
         value = self.rec_json
@@ -286,14 +286,22 @@ class BibFieldDict(object):
 
         return value
 
+    def is_cacheable(self, field):
+        """
+        Check if a field is inside the __do_not_cache or not
+
+        @return True if it is not in __do_not_cache
+        """
+        return not get_main_field(field) in self.rec_json['__do_not_cache']
+
+
     def update_field_cache(self, field):
         """
         Updates the value of the cache for the given calculated field
         """
-        calculated_field = self.rec_json.get(field)
-
-        if calculated_field and re.search('^_[a-zA-Z0-9]', field):
-            calculated_field[0] = self._try_to_eval(calculated_field[1])
+        field = get_main_field(field)
+        if re.search('^_[a-zA-Z0-9]', field):
+            self.rec_json[field] = self._try_to_eval(self['__calculated_functions'][field])
 
     def update_all_fields_cache(self):
         """
@@ -626,3 +634,35 @@ def build_data_structure(record, field):
                 exec("record%s={}" % (eval_string,))
                 exec("record%s=None" % (eval_string + key,))
         eval_string += key
+
+
+def get_main_field(field):
+    """
+    From a given field it gets the outer field of the tree.
+
+    i.e.: 'a[0].b.c' returns 'a'
+    """
+    if '.' in field:
+        field = field.split('.')[0]
+    if '[' in field:
+        field = field.split('[')[0]
+    return field
+
+
+def get_producer_rules(field, code):
+    """docstring for get_producer_rules"""
+    from invenio.bibfield_config import config_rules
+
+    rule = config_rules[field]
+    if isinstance(rule, list):
+        if len(rule) == 1:
+            # case field[n]
+            return [(rule[0].replace('[n]', ''), config_rules[rule[0]]['producer'].get(code, {}))]
+        else:
+            # case field[1], field[n]
+            rules = []
+            for new_field in rule:
+                rules.append((new_field.replace('[n]', '[1:]'), config_rules[new_field]['producer'].get(code, {})))
+            return rules
+    else:
+        return [(field, rule['producer'].get(code, {}))]

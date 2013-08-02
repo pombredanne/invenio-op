@@ -46,7 +46,7 @@ def _create_config_parser():
 
     rule ::= ([persitent_identifier] json_id ["[0]" | "[n]"] "," aliases":" INDENT body UNDENT) | include | python_comment
     include ::= "include(" PATH ")"
-    body ::=  [inherit_from] (creator | derived | calculated) [checker] [documentation]
+    body ::=  [inherit_from] (creator | derived | calculated) [checker] [documentation] [producer]
     aliases ::= json_id ["[0]" | "[n]"] ["," aliases]
     creator ::= "creator:" INDENT creator_body+ UNDENT
     creator_body ::= [decorators] source_format "," source_tag "," python_allowed_expr
@@ -76,6 +76,10 @@ def _create_config_parser():
     documentation ::= INDENT doc_string subfield* UNDENT
     doc_string ::= QUOTED_STRING
     subfield ::= "@subfield" json_id["."json_id*] ":" docstring
+
+    producer ::= "producer:" INDENT producer_body UNDENT
+    producer_body ::= producer_code "," python_dictionary
+    producer_code ::= ident
     """
 
     indent_stack = [1]
@@ -163,10 +167,16 @@ def _create_config_parser():
     documentation = ("documentation" + Suppress(":") + INDENT + Optional(doc_string).setResultsName("main_doc") + ZeroOrMore(subfield) + UNDENT)\
                      .setResultsName("documentation")
 
+    producer_code = ident\
+                  .setResultsName("producer_code", listAllMatches=True)
+    producer_body = (producer_code + Suppress(",") + python_allowed_expr)\
+                  .setResultsName("producer_def", listAllMatches=True)
+    producer = "producer"  + Suppress(":") + INDENT + OneOrMore(producer_body) + UNDENT
+
     field_def = (creator | derived | calculated)\
                 .setResultsName("type_field", listAllMatches=True)
 
-    body = Optional(inherit_from) + Optional(field_def) + Optional(checker) + Optional(documentation)
+    body = Optional(inherit_from) + Optional(field_def) + Optional(checker) + Optional(documentation) + Optional(producer)
     comment = Literal("#") + restOfLine + LineEnd()
     include = (Suppress("include") + quotedString)\
               .setResultsName("includes", listAllMatches=True)
@@ -343,6 +353,7 @@ class BibFieldParser(object):
                                           'rules'         : rules,
                                           'checker'       : [],
                                           'documentation' : BibFieldDict(),
+                                          'producer'        : {},
                                           'type'          : 'real',
                                           'aliases'       : aliases,
                                           'persistent_identifier': persistent_id,
@@ -359,6 +370,7 @@ class BibFieldParser(object):
 
         self._create_checkers(rule)
         self._create_documentation(rule)
+        self._create_producer(rule)
 
     def _create_derived_calculated_rule(self, rule):
         """
@@ -392,6 +404,7 @@ class BibFieldParser(object):
         self.config_rules[json_id] = {'rules'        : {},
                                       'checker'      : [],
                                       'documentation': BibFieldDict(),
+                                      'producer'       : {},
                                       'aliases'      : aliases,
                                       'type'         : rule.type_field[0],
                                       'persistent_identifier' : persistent_id,
@@ -406,6 +419,7 @@ class BibFieldParser(object):
 
         self._create_checkers(rule)
         self._create_documentation(rule)
+        self._create_producer(rule)
 
     def _create_decorators_content(self, rule):
         """
@@ -524,3 +538,19 @@ class BibFieldParser(object):
                     key = "%s.%s" % ('subfields', subfield[0].replace('.', '.subfields.'))
                     config_doc[key] = {'doc_string': subfield[1],
                                        'subfields' : None}
+
+    def _create_producer(self, rule):
+        """
+        Creates the dictionary of possible producer formats for the given rule
+        """
+        json_id = rule.json_id[0]
+        assert json_id in self.config_rules
+
+        if rule.producer_def:
+            if self.config_rules[json_id]['overwrite']:
+                self.config_rules[json_id]['producer'] = {}
+            for producer in rule.producer_def:
+                producer_code = producer.producer_code[0]
+                rule = producer.value[0]
+                self.config_rules[json_id]['producer'][producer_code] = eval(rule)
+

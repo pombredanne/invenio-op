@@ -23,6 +23,7 @@ BibField Json Reader
 
 __revision__ = "$Id$"
 
+import os
 import re
 
 import sys
@@ -37,6 +38,9 @@ if sys.version_info < (2,5):
             if element:
                 return True
         return False
+
+from invenio.config import CFG_PYLIBDIR
+from invenio.pluginutils import PluginContainer
 
 from invenio.bibfield_utils import BibFieldDict, BibFieldCheckerException
 from invenio.bibfield_config import config_rules
@@ -62,6 +66,8 @@ class JsonReader(BibFieldDict):
         self._warning_messages = []
 
         self.__parsed = []
+
+
 
         if self.blob_wrapper:
             try:
@@ -137,76 +143,38 @@ class JsonReader(BibFieldDict):
             from invenio.textutils import encode_for_xml
             return encode_for_xml(str(value))
 
-        formatstring_controlfield = '<controlfield tag="{tag}">{content}</controlfield>'
-        formatstring_datafield = '<datafield tag="{tag}" ind1="{ind1}" ind2="{ind2}">{content}</datafield>'
-
-        def create_marc_representation(key, value, legacy_rules):
-            """
-            Helper function to create the marc representation of one field
-
-            #FIXME: refactor this spaghetti code
-            """
-            output = ''
+        export = '<record>'
+        marc_dicts = self.produce_marc()
+        for marc_dict in marc_dicts:
             content = ''
             tag = ''
             ind1 = ''
             ind2 = ''
-
-            if not value:
-                return ''
-
-            for legacy_rule in legacy_rules:
-                if not '%' in legacy_rule[0]:
-                    if len(legacy_rule[0]) == 3 and legacy_rule[0].startswith('00'):
-                        # Control Field (No indicators no subfields)
-                        formatstring = None
-                        if legacy_rule[0] == '005':
-                            #Especial format for date only for 005 tag
-                            formatstring = "%Y%m%d%H%M%S.0"
-                        output += '<controlfield tag="%s">%s</controlfield>' % (legacy_rule[0],
-                                                                                self.get(key,
-                                                                                         default='',
-                                                                                         formatstring=formatstring,
-                                                                                         formatfunction=encode_for_marcxml)
-                                                                                )
-                    elif len(legacy_rule[0]) == 6:
-                        #Data Field
-                        if not (tag == legacy_rule[0][:3] and ind1 == legacy_rule[0][3].replace('_', '') and ind2 == legacy_rule[0][4].replace('_', '')):
-                            tag = legacy_rule[0][:3]
-                            ind1 = legacy_rule[0][3].replace('_', '')
-                            ind2 = legacy_rule[0][4].replace('_', '')
-                            if content:
-                                output += '<datafield tag="%s" ind1="%s" ind2="%s">%s</datafield>' % (tag, ind1, ind2, content)
-                                content = ''
-                        try:
-                            tmp = value.get(legacy_rule[-1])
-                            if tmp:
-                                tmp = encode_for_marcxml(tmp)
-                            else:
-                                continue
-                        except AttributeError:
-                            tmp = encode_for_marcxml(value)
-
-                        content += '<subfield code="%s">%s</subfield>' % (legacy_rule[0][5], tmp)
-            if content:
-                output += '<datafield tag="%s" ind1="%s" ind2="%s">%s</datafield>' % (tag, ind1, ind2, content)
-            return output
-
-        export = '<record>'
-
-        for key in [k for k in config_rules.iterkeys() if k in self]:
-            values = self[key.replace('[n]', '[1:]')]
-            if not isinstance(values, list):
-                values = [values]
-            for value in values:
-                config_rule = config_rules[key]
+            for key, value in marc_dict.iteritems():
+                if isinstance(value, basestring):
+                    value = [value]
                 try:
-                    if config_rule['type'] == 'real':
-                        export += create_marc_representation(key, value, sum([rule['legacy'] for rule in config_rule['rules']['marc']], ()))
-                    else:
-                        export += create_marc_representation(key, value, config_rule['rules']['legacy'])
-                except (TypeError, KeyError):
-                    break
+                    for v in value:
+                        if v is None:
+                            continue
+                        if key.startswith('00') and len(key) == 3:
+                            # Control Field (No indicators no subfields)
+                            export += '<controlfield tag="%s">%s</controlfield>\n' % (key, encode_for_marcxml(v))
+                        elif len(key) == 6:
+                            if not (tag == key[:3] and ind1 == key[3].replace('_', '') and ind2 == key[4].replace('_', '')):
+                                tag = key[:3]
+                                ind1 = key[3].replace('_', '')
+                                ind2 = key[4].replace('_', '')
+                                if content:
+                                    export += '<datafield tag="%s" ind1="%s" ind2="%s">%s</datafield>\n' % (tag, ind1, ind2, content)
+                                    content = ''
+                            content += '<subfield code="%s">%s</subfield>' % (key[5], encode_for_marcxml(v))
+                        else:
+                            pass
+                except TypeError:
+                    pass
+            if content:
+                export += '<datafield tag="%s" ind1="%s" ind2="%s">%s</datafield>\n' % (tag, ind1, ind2, content)
 
         export += '</record>'
         return export
@@ -325,10 +293,9 @@ class JsonReader(BibFieldDict):
             self[field_name] = self._try_to_eval(rule['value'])
         else:
             if rule['do_not_cache']:
-                self[field_name] = [None, rule['value']]
                 self['__do_not_cache'].append(field_name)
-            else:
-                self[field_name] = [self._try_to_eval(rule['value']), rule['value']]
+            self[field_name] = self._try_to_eval(rule['value'])
+            self['__calculated_functions'][field_name] = rule['value']
 
         for alias in aliases:
             self['__aliases'][alias] = field_name
@@ -341,6 +308,10 @@ class JsonReader(BibFieldDict):
         the json to delete None values
         """
         pass
+
+
+for key, value in PluginContainer(os.path.join(CFG_PYLIBDIR, 'invenio', 'bibfield_functions', 'produce_*.py')).iteritems():
+    setattr(JsonReader, key, value)
 
 ## Compulsory plugin interface
 readers = JsonReader
