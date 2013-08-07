@@ -15,7 +15,7 @@
 ## along with Invenio; if not, write to the Free Software Foundation, Inc.,
 ## 59 Temple Place, Suite 330, Boston, MA 02111-1307, USA.
 
-SUBDIRS = facets template_context_functions
+SUBDIRS = facets template_context_functions preview_plugins
 
 pylibdir = $(libdir)/python/invenio
 
@@ -36,6 +36,7 @@ pylib_DATA = \
 	websearch_regression_tests.py \
 	websearch_web_tests.py \
 	record_blueprint.py \
+	record_preview_plugins.py \
 	search_engine.py \
 	search_engine_config.py \
 	search_engine_unit_tests.py \

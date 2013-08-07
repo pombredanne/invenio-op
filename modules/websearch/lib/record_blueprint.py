@@ -46,6 +46,7 @@ from invenio.bibdocfile import BibRecDocs
 from invenio.search_engine_utils import get_fieldvalues
 from invenio.bibrank_downloads_similarity import register_page_view_event
 
+
 blueprint = InvenioBlueprint('record', __name__, url_prefix="/"+CFG_SITE_RECORD,
                              config='invenio.search_engine_config',
                              breadcrumbs=[])
@@ -170,6 +171,25 @@ def references(recid):
 @request_record
 def files(recid):
     return render_template('record_files.html')
+
+
+@blueprint.route('/<int:recid>/preview', methods=['GET', 'POST'])
+@request_record
+def preview(recid):
+    from invenio.record_preview_plugins import plugins
+
+    embed = request.args.get('embed')
+    ffullname = request.args.get('file')
+
+    files = BibRecDocs(recid).list_latest_files(list_hidden=False)
+    f = None
+
+    for f in files:
+        if f.name + f.superformat == ffullname:
+            for plugin_id in plugins.keys():
+                if plugins[plugin_id]['can_preview'](f):
+                    return plugins[plugin_id]['preview'](f, embed == 'true')
+    return plugins['preview_default']['preview'](ffullname, embed == 'true')
 
 
 from invenio.bibrank_citation_searcher import calculate_cited_by_list,\

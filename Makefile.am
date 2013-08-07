@@ -43,6 +43,9 @@ solrdirname = apache-solr-3.1.0
 solrdir = $(prefix)/lib/$(solrdirname)
 solrutils_dir=$(CURDIR)/modules/miscutil/lib/solrutils
 
+# for recline.js
+RECLINEVER=master
+
 CLASSPATH=.:${solrdir}/dist/solrj-lib/commons-io-1.4.jar:${solrdir}/dist/apache-solr-core-*jar:${solrdir}/contrib/jzlib-1.0.7.jar:${solrdir}/dist/apache-solr-solrj-3.1.0.jar:${solrdir}/dist/solrj-lib/slf4j-api-1.5.5.jar:${solrdir}/dist/*:${solrdir}/contrib/basic-lucene-libs/*:${solrdir}/contrib/analysis-extras/lucene-libs/*:${solrdir}/dist/solrj-lib/*
 
 # git-version-get stuff:
@@ -381,26 +384,25 @@ install-recline:
 	rm -rf /tmp/invenio-recline
 	mkdir /tmp/invenio-recline
 	(cd /tmp/invenio-recline && \
-	wget -O recline.zip 'https://github.com/okfn/recline/zipball/master' && \
+	wget -O recline.zip 'https://github.com/okfn/recline/archive/${RECLINEVER}.zip' && \
 	unzip -u recline.zip && \
 	rm recline.zip && \
 	mv *recline* recline && \
-	mkdir ${prefix}/var/www/recline && \
-	mkdir ${prefix}/var/www/recline/css && \
-	mkdir ${prefix}/var/www/recline/src && \
-	mkdir ${prefix}/var/www/recline/vendor && \
-	cp -R recline/css ${prefix}/var/www/recline/ && \
-	cp -R recline/src ${prefix}/var/www/recline/ && \
-	cp -R recline/vendor ${prefix}/var/www/recline/ && \
+	mkdir -p ${prefix}/var/www/js/recline/css && \
+	mkdir -p ${prefix}/var/www/js/recline/dist && \
+	mkdir -p ${prefix}/var/www/js/recline/src && \
+	mkdir -p ${prefix}/var/www/js/recline/vendor && \
+	cp -R recline/css ${prefix}/var/www/js/recline/ && \
+	cp -R recline/src ${prefix}/var/www/js/recline/ && \
+	cp -R recline/dist ${prefix}/var/www/js/recline/ && \
+	cp -R recline/vendor ${prefix}/var/www/js/recline/ && \
 	rm -rf /tmp/invenio-recline )
 	@echo "***********************************************************"
 	@echo "** The Recline JS was successfully installed.     **"
 	@echo "***********************************************************"
 
 uninstall-recline:
-	rm -Rf ${prefix}/var/www/recline
-	rm -Rf ${prefix}/var/www/js/app.js
-	rm -Rf ${prefix}/var/www/img/spec.csv
+	rm -Rf ${prefix}/var/www/js/recline
 	@echo "***********************************************************"
 	@echo "** The Recline JS was successfully uninstalled.   **"
 	@echo "***********************************************************"

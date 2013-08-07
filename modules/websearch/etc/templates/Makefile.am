@@ -17,11 +17,17 @@
 
 templatesdir = $(sysconfdir)/templates
 templates_DATA = record.html \
-		 record_metadata.html \
 		 record_comments.html \
 		 record_citations.html \
 		 record_files.html \
 		 record_keywords.html \
+		 record_metadata.html \
+		 record_preview.html \
+		 record_preview_bottom.html \
+		 record_preview_csv.html \
+		 record_preview_default.html \
+		 record_preview_gview.html \
+		 record_preview_top.html \
 		 record_references.html \
 		 record_usage.html \
 		 record_back_to_search_links.html \
