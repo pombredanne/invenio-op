@@ -373,6 +373,36 @@ uninstall-typeahead-plugin:
 	rm ${prefix}/var/www/js/typeahead.min.js
 	@echo "***********************************************************"
 	@echo "** typeahead.js was successfully uninstalled.            **"
+
+install-recline:
+	@echo "***********************************************************"
+	@echo "** Installing Recline JS, please wait...          **"
+	@echo "***********************************************************"
+	rm -rf /tmp/invenio-recline
+	mkdir /tmp/invenio-recline
+	(cd /tmp/invenio-recline && \
+	wget -O recline.zip 'https://github.com/okfn/recline/zipball/master' && \
+	unzip -u recline.zip && \
+	rm recline.zip && \
+	mv *recline* recline && \
+	mkdir ${prefix}/var/www/recline && \
+	mkdir ${prefix}/var/www/recline/css && \
+	mkdir ${prefix}/var/www/recline/src && \
+	mkdir ${prefix}/var/www/recline/vendor && \
+	cp -R recline/css ${prefix}/var/www/recline/ && \
+	cp -R recline/src ${prefix}/var/www/recline/ && \
+	cp -R recline/vendor ${prefix}/var/www/recline/ && \
+	rm -rf /tmp/invenio-recline )
+	@echo "***********************************************************"
+	@echo "** The Recline JS was successfully installed.     **"
+	@echo "***********************************************************"
+
+uninstall-recline:
+	rm -Rf ${prefix}/var/www/recline
+	rm -Rf ${prefix}/var/www/js/app.js
+	rm -Rf ${prefix}/var/www/img/spec.csv
+	@echo "***********************************************************"
+	@echo "** The Recline JS was successfully uninstalled.   **"
 	@echo "***********************************************************"
 
 install-jquery-tokeninput:
