@@ -414,18 +414,7 @@ BibWorkflowObject
         return NotImplemented
 
     def __ne__(self, other):
-        if isinstance(other, BibWorkflowObject):
-            if self._data == other._data and \
-                    self.extra_data == other.extra_data and \
-                    self.id_workflow == other.id_workflow and \
-                    self.version == other.version and \
-                    self.id_parent == other.id_parent and \
-                    isinstance(self.created, datetime) and \
-                    isinstance(self.modified, datetime):
-                return False
-            else:
-                return True
-        return False
+        return not self.__eq__(other)
 
     def add_task_result(self, task_name, result):
         self.extra_data["tasks_results"][task_name] = result
