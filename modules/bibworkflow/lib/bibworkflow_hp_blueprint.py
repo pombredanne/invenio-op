@@ -29,6 +29,7 @@ from invenio.bibworkflow_utils import get_workflow_definition
 from invenio.bibworkflow_api import continue_oid_delayed
 from invenio.bibworkflow_hp_load_widgets import widgets
 from invenio.bibworkflow_model import Workflow
+from invenio.bibworkflow_config import CFG_OBJECT_VERSION
 
 from flask import redirect, url_for, flash
 from invenio.bibformat_engine import format_record
@@ -95,12 +96,15 @@ def load_table():
         table_data['iTotalRecords'] = len(bwolist)
         table_data['iTotalDisplayRecords'] = len(bwolist)
 
-        if bwo.version == 2:
+        if bwo.version == CFG_OBJECT_VERSION.FINAL:
             bwo_version = \
                 '<span class="label label-success">Final</span>'
-        elif bwo.version == 1:
+        elif bwo.version == CFG_OBJECT_VERSION.HALTED:
             bwo_version = \
                 '<span class="label label-warning">Halted</span>'
+        else:
+            bwo_version = \
+                '<span class="label label-success">Running</span>'
         if bwo.extra_data['widget'] is not None:
             widget_link = '<a class="btn btn-info"' + \
                           'href="/admin/holdingpen/widget?widget=' + \
