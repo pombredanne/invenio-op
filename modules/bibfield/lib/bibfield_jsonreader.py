@@ -42,7 +42,9 @@ if sys.version_info < (2,5):
 from invenio.config import CFG_PYLIBDIR
 from invenio.pluginutils import PluginContainer
 
-from invenio.bibfield_utils import BibFieldDict, BibFieldCheckerException
+from invenio.bibfield_utils import BibFieldDict, \
+                                   InvenioBibFieldContinuableError, \
+                                   InvenioBibFieldError
 from invenio.bibfield_config import config_rules
 
 
@@ -54,16 +56,13 @@ class JsonReader(BibFieldDict):
     so no conversion is needed.
     """
 
-    def __init__(self, blob_wrapper=None):
+    def __init__(self, blob_wrapper=None, check=False):
         """
         blob -> _prepare_blob(...) -> rec_tree -> _translate(...) -> rec_json -> check_record(...)
         """
         super(JsonReader, self).__init__()
         self.blob_wrapper = blob_wrapper
         self.rec_tree = None  # all record information represented as a tree (intermediate structure)
-
-        self._missing_cfg = []
-        self._warning_messages = []
 
         self.__parsed = []
 
@@ -78,7 +77,8 @@ class JsonReader(BibFieldDict):
             self._prepare_blob()
             self._translate()
             self._post_process_json()
-            self.check_record()
+            if check:
+               self.check_record()
             self.is_init_phase = False
         else:
             self['__master_format'] = 'json'
@@ -111,11 +111,12 @@ class JsonReader(BibFieldDict):
             return True
         return False
 
-    def check_record(self):
+    def check_record(self, reset=True):
         """
         Using the checking rules defined inside bibfied configurations files checks
         if the record is well build. If not it stores the problems inside
-        self._warning_messages
+        self['__error_messages'] splitting then by continuable errors and fatal/non-continuable
+        errors
         """
         def check_rules(checker_functions, key):
             """docstring for check_rule"""
@@ -123,8 +124,14 @@ class JsonReader(BibFieldDict):
                 if 'all' in checker_function[0] or self['__master_format'] in checker_function[0]:
                     try:
                         self._try_to_eval("%s(self,'%s',%s)" % (checker_function[1], key, checker_function[2]))
-                    except BibFieldCheckerException, err:
-                        self._warning_messages.append(str(err))
+                    except InvenioBibFieldContinuableError, err:
+                        self['__error_messages']['cerror'].append('Checking CError - ' + str(err))
+                    except InvenioBibFieldError, err:
+                        self['__error_messages']['error'].append('Checking Error - ' + str(err))
+
+        if reset or '__error_messages.error' not in self or  '__error_messages.cerror' not in self:
+            self.rec_json['__error_messages'] = {'error': [], 'cerror': []}
+
         for key in self.keys():
             try:
                 check_rules(config_rules[key]['checker'], key)
@@ -133,6 +140,16 @@ class JsonReader(BibFieldDict):
                     check_rules(config_rules[kkey]['checker'], kkey)
             except KeyError:
                 continue
+
+    @property
+    def fatal_errors(self):
+        """@return All the fatal/non-continuable errors that check_record has found"""
+        return self.get('__error_messages.error', [])
+
+    @property
+    def continuable_errors(self):
+        """@return All the continuable errors that check_record has found"""
+        return self.get('__error_messages.cerror', [])
 
     def legacy_export_as_marc(self):
         """
@@ -288,12 +305,14 @@ class JsonReader(BibFieldDict):
         if rule['only_if'] and not all(self._try_to_eval(rule['only_if'])):
             return False
         #Apply rule
-        if rule_type == 'derived':
+        try:
             self[field_name] = self._try_to_eval(rule['value'])
-        else:
+        except Exception, e:
+            self['__error_messages.cerror[n]'] = 'Virtual Rule CError - Unable to evaluate %s - %s' % (field_name, str(e))
+
+        if rule_type == 'calculated':
             if rule['do_not_cache']:
                 self['__do_not_cache'].append(field_name)
-            self[field_name] = self._try_to_eval(rule['value'])
             self['__calculated_functions'][field_name] = rule['value']
 
         for alias in aliases:

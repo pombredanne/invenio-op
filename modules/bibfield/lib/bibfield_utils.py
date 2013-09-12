@@ -44,10 +44,13 @@ class BibFieldException(Exception):
     pass
 
 
-class BibFieldCheckerException(Exception):
-    """
-    Exception raised when some error happens during checking
-    """
+class InvenioBibFieldContinuableError(Exception):
+    """BibField continuable error"""
+    pass
+
+
+class InvenioBibFieldError(Exception):
+    """BibField fatal error, @see CFG_BIBUPLOAD_BIBFIELD_STOP_ERROR_POLICY"""
     pass
 
 
@@ -301,7 +304,10 @@ class BibFieldDict(object):
         """
         field = get_main_field(field)
         if re.search('^_[a-zA-Z0-9]', field):
-            self.rec_json[field] = self._try_to_eval(self['__calculated_functions'][field])
+            try:
+                self.rec_json[field] = self._try_to_eval(self['__calculated_functions'][field])
+            except Exception, e:
+                self['__error_messages.cerror[n]'] = 'CError - Unable to update %s - %s' % (field_name, str(e))
 
     def update_all_fields_cache(self):
         """

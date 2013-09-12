@@ -53,8 +53,8 @@ def produce_marc(self, fields=None):
                         except:
                             try:
                                 tmp_dict[key] = self._try_to_eval(subfield)
-                            except:
-                                pass
+                            except Exception,e:
+                                self['__error_messages.cerror[n]'] = 'Producer CError - Unable to produce %s - %s' % (field, str(e))
                 if tmp_dict:
                     out.append(tmp_dict)
     return out
