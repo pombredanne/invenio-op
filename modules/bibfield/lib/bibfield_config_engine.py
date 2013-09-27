@@ -123,15 +123,15 @@ def _create_config_parser():
              .setResultsName("legacy", listAllMatches=True)
     only_if = (Suppress("@only_if") + originalTextFor(nestedExpr("(", ")")))\
               .setResultsName("only_if")
-    only_if_value = (Suppress("@only_if_value") + originalTextFor(nestedExpr("(", ")")))\
-                    .setResultsName("only_if_value")
+    only_if_master_value = (Suppress("@only_if_value") + originalTextFor(nestedExpr("(", ")")))\
+                    .setResultsName("only_if_master_value")
     depends_on = (Suppress("@depends_on") + originalTextFor(nestedExpr("(", ")")))\
                  .setResultsName("depends_on")
     parse_first = (Suppress("@parse_first") + originalTextFor(nestedExpr("(", ")")))\
                   .setResultsName("parse_first")
     do_not_cache = (Suppress("@") + "do_not_cache")\
                    .setResultsName("do_not_cache")
-    field_decorator = parse_first ^ depends_on ^ only_if ^ only_if_value ^ do_not_cache ^ legacy
+    field_decorator = parse_first ^ depends_on ^ only_if_master_value ^ only_if ^ do_not_cache ^ legacy
 
     #Independent decorators
     inherit_from = (Suppress("@inherit_from") + originalTextFor(nestedExpr("(", ")")))\
@@ -411,18 +411,18 @@ class BibFieldParser(object):
         """
         Extracts from the rule all the possible decorators.
         """
-        depends_on = only_if = only_if_value = parse_first = None
+        depends_on = only_if = only_if_master_value = parse_first = None
 
         if rule.depends_on:
             depends_on = rule.depends_on[0]
         if rule.only_if:
             only_if = rule.only_if[0]
         if rule.only_if_master_value:
-            only_if = rule.only_if_master_value[0]
+            only_if_master_value = rule.only_if_master_value[0]
         if rule.parse_first:
             parse_first = rule.parse_first[0]
 
-        return (depends_on, only_if, only_if_value, parse_first)
+        return (depends_on, only_if, only_if_master_value, parse_first)
 
     def _create_legacy_rules(self, legacy_rules, json_id, source_format=None):
         """

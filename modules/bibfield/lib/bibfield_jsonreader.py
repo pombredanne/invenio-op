@@ -199,8 +199,12 @@ class JsonReader(BibFieldDict):
             if not isinstance(values, list):
                 values = [values]
             for value in values:
+                config_rule = config_rules[key]
                 try:
-                    export += create_marc_representation(key, value, sum([rule['legacy'] for rule in config_rules[key]['rules']['marc']], ()))
+                    if config_rule['type'] == 'real':
+                        export += create_marc_representation(key, value, sum([rule['legacy'] for rule in config_rule['rules']['marc']], ()))
+                    else:
+                        export += create_marc_representation(key, value, config_rule['rules']['legacy'])
                 except (TypeError, KeyError):
                     break
 
@@ -249,7 +253,6 @@ class JsonReader(BibFieldDict):
                 self._unpack_rule(json_id, field_name)
 
     def _get_elements_from_rec_tree(self, regex_rules):
-        """docstring for _get_elements_from_rec_tree"""
         for regex_rule in regex_rules:
             for element in self.rec_tree[re.compile(regex_rule)]:
                 yield element
@@ -277,7 +280,6 @@ class JsonReader(BibFieldDict):
             return self._apply_virtual_rule(field_name, rule_def['aliases'], rule_def['rules'], rule_def['type'])
 
     def _apply_rule(self, field_name, aliases, rule):
-        """docstring for _apply_rule"""
         if 'entire_record' in rule['source_tag'] or any(key in self.rec_tree for key in rule['source_tag']):
             if rule['parse_first']:
                 for json_id in self._try_to_eval(rule['parse_first']):
@@ -291,10 +293,19 @@ class JsonReader(BibFieldDict):
             else:
                 for elements in self._get_elements_from_rec_tree(rule['source_tag']):
                     if isinstance(elements, list):
+                        returned_value = False
                         for element in elements:
-                            self[field_name] = self._try_to_eval(rule['value'], value=element)
+                            if rule['only_if_master_value'] and not all(self._try_to_eval(rule['only_if_master_value'], value=element)):
+                                returned_value = returned_value or False
+                            else:
+                                self[field_name] = self._try_to_eval(rule['value'], value=element)
+                                returned_value = returned_value or True
+                        return returned_value
                     else:
-                        self[field_name] = self._try_to_eval(rule['value'], value=elements)
+                        if rule['only_if_master_value'] and not all(self._try_to_eval(rule['only_if_master_value'], value=elements)):
+                            return False
+                        else:
+                            self[field_name] = self._try_to_eval(rule['value'], value=elements)
             for alias in aliases:
                 self['__aliases'][alias] = field_name
             return True
@@ -313,10 +324,11 @@ class JsonReader(BibFieldDict):
         if rule_type == 'derived':
             self[field_name] = self._try_to_eval(rule['value'])
         else:
-            self[field_name] = [self._try_to_eval(rule['value']), rule['value']]
-
-        if rule['do_not_cache']:
-            self['__do_not_cache'].append(field_name)
+            if rule['do_not_cache']:
+                self[field_name] = [None, rule['value']]
+                self['__do_not_cache'].append(field_name)
+            else:
+                self[field_name] = [self._try_to_eval(rule['value']), rule['value']]
 
         for alias in aliases:
             self['__aliases'][alias] = field_name
