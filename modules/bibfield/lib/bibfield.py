@@ -39,6 +39,7 @@ from invenio.dbquery import run_sql
 from invenio.errorlib import register_exception
 from invenio.signalutils import record_after_update
 
+from invenio.bibfield_config import config_rules, legacy_rules
 from invenio.bibfield_jsonreader import JsonReader
 from invenio.bibfield_utils import BlobWrapper
 
@@ -116,6 +117,25 @@ def get_record(recid, reset_cache=False):
             (recid, pickle.dumps((record.rec_json))))
 
     return record
+
+
+def gess_legacy_field_names(fields, type='marc'):
+    """
+    Using the legacy rules written in the config file (@legacy) tries to find
+    the equivalent json field for one or more legacy fields.
+
+    >>> gess_legacy_fields(('100__a', '245'), 'marc')
+    {'100__a':['authors[0].full_name'], '245':['title']}
+    """
+    res = {}
+    if isinstance(fields, basestring):
+        fields = (fields, )
+    for field in fields:
+        try:
+            res[field] = legacy_rules[type].get(field, [])
+        except:
+            res[field] = []
+    return res
 
 
 def _build_wrapper(recid):
