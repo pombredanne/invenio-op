@@ -124,7 +124,7 @@ def login(nickname=None, password=None, login_method=None, action='',
                 user = update_login(nickname)
 
         if user:
-            flash(_("You are logged in as %s.") % user.nickname, "info")
+            # flash(_("You are logged in as %s.") % user.nickname, "info")
             if referer is not None:
                 from urlparse import urlparse
                 # we should not redirect to these URLs after login

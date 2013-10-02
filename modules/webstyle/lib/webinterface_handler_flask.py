@@ -265,7 +265,7 @@ def create_invenio_flask_app(**kwargs_config):
         """Displays login page when user is not authorised."""
         if request.is_xhr:
             return _("Authorization failure"), 401
-        flash(_("Authorization failure"), 'error')
+        flash(_("Please login before proceeding."), 'info')
         from invenio.webaccount_blueprint import login
         return login(referer=request.url), 401
 
