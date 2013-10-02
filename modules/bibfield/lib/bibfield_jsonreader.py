@@ -139,6 +139,7 @@ class JsonReader(BibFieldDict):
         It creates a valid marcxml using the legacy rules defined in the config
         file
         """
+        from collections import Iterable
         def encode_for_marcxml(value):
             from invenio.textutils import encode_for_xml
             return encode_for_xml(str(value))
@@ -151,28 +152,26 @@ class JsonReader(BibFieldDict):
             ind1 = ''
             ind2 = ''
             for key, value in marc_dict.iteritems():
-                if isinstance(value, basestring):
+                if isinstance(value, basestring) or not isinstance(value, Iterable):
                     value = [value]
-                try:
-                    for v in value:
-                        if v is None:
-                            continue
-                        if key.startswith('00') and len(key) == 3:
-                            # Control Field (No indicators no subfields)
-                            export += '<controlfield tag="%s">%s</controlfield>\n' % (key, encode_for_marcxml(v))
-                        elif len(key) == 6:
-                            if not (tag == key[:3] and ind1 == key[3].replace('_', '') and ind2 == key[4].replace('_', '')):
-                                tag = key[:3]
-                                ind1 = key[3].replace('_', '')
-                                ind2 = key[4].replace('_', '')
-                                if content:
-                                    export += '<datafield tag="%s" ind1="%s" ind2="%s">%s</datafield>\n' % (tag, ind1, ind2, content)
-                                    content = ''
-                            content += '<subfield code="%s">%s</subfield>' % (key[5], encode_for_marcxml(v))
-                        else:
-                            pass
-                except TypeError:
-                    pass
+                for v in value:
+                    if v is None:
+                        continue
+                    if key.startswith('00') and len(key) == 3:
+                        # Control Field (No indicators no subfields)
+                        export += '<controlfield tag="%s">%s</controlfield>\n' % (key, encode_for_marcxml(v))
+                    elif len(key) == 6:
+                        if not (tag == key[:3] and ind1 == key[3].replace('_', '') and ind2 == key[4].replace('_', '')):
+                            tag = key[:3]
+                            ind1 = key[3].replace('_', '')
+                            ind2 = key[4].replace('_', '')
+                            if content:
+                                export += '<datafield tag="%s" ind1="%s" ind2="%s">%s</datafield>\n' % (tag, ind1, ind2, content)
+                                content = ''
+                        content += '<subfield code="%s">%s</subfield>' % (key[5], encode_for_marcxml(v))
+                    else:
+                        pass
+
             if content:
                 export += '<datafield tag="%s" ind1="%s" ind2="%s">%s</datafield>\n' % (tag, ind1, ind2, content)
 

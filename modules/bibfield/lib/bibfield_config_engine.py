@@ -105,7 +105,7 @@ def _create_config_parser():
     UNDENT = FollowedBy(empty).setParseAction(check_unindent)
     UNDENT.setParseAction(do_unindent)
 
-    json_id = (Word(alphanums + "_") + Optional(oneOf("[0] [n]")))\
+    json_id = (Word(alphas + "_", alphanums + "_") + Optional(oneOf("[0] [n]")))\
               .setResultsName("json_id", listAllMatches=True)\
               .setParseAction(lambda tokens: "".join(tokens))
     aliases = delimitedList((Word(alphanums + "_") + Optional(oneOf("[0] [n]")))
@@ -118,7 +118,7 @@ def _create_config_parser():
     dict_access = list_access = originalTextFor(ident + nestedExpr('[', ']'))
     function_call = originalTextFor(ZeroOrMore(ident + ".") + ident + nestedExpr('(', ')'))
 
-    python_allowed_expr << (ident ^ dict_def ^ list_def ^ dict_access ^ list_access ^ function_call)\
+    python_allowed_expr << (ident ^ dict_def ^ list_def ^ dict_access ^ list_access ^ function_call ^ restOfLine)\
                           .setResultsName("value", listAllMatches=True)
 
     persistent_identifier = (Suppress("@persistent_identifier") +  nestedExpr("(", ")"))\
@@ -167,7 +167,7 @@ def _create_config_parser():
     documentation = ("documentation" + Suppress(":") + INDENT + Optional(doc_string).setResultsName("main_doc") + ZeroOrMore(subfield) + UNDENT)\
                      .setResultsName("documentation")
 
-    producer_code = ident\
+    producer_code = Word(alphas + "_", alphanums + "_")\
                   .setResultsName("producer_code", listAllMatches=True)
     producer_body = (producer_code + Suppress(",") + python_allowed_expr)\
                   .setResultsName("producer_def", listAllMatches=True)
