@@ -43,20 +43,21 @@ def produce_marc(self, fields=None):
             if not isinstance(field, list):
                 field = [field, ]
             for f in field:
-                tmp_dict = {}
-                for key, subfield in rule[1].iteritems():
-                    if not subfield:
-                        tmp_dict[key] = f
-                    else:
-                        try:
-                            tmp_dict[key] = f[subfield]
-                        except:
+                for r in rule[1]:
+                    tmp_dict = {}
+                    for key, subfield in r.iteritems():
+                        if not subfield:
+                            tmp_dict[key] = f
+                        else:
                             try:
-                                tmp_dict[key] = self._try_to_eval(subfield)
-                            except Exception,e:
-                                self['__error_messages.cerror[n]'] = 'Producer CError - Unable to produce %s - %s' % (field, str(e))
-                if tmp_dict:
-                    out.append(tmp_dict)
+                                tmp_dict[key] = f[subfield]
+                            except:
+                                try:
+                                    tmp_dict[key] = self._try_to_eval(subfield)
+                                except Exception,e:
+                                    self['__error_messages.cerror[n]'] = 'Producer CError - Unable to produce %s - %s' % (field, str(e))
+                    if tmp_dict:
+                        out.append(tmp_dict)
     return out
 
 

@@ -552,5 +552,7 @@ class BibFieldParser(object):
             for producer in rule.producer_def:
                 producer_code = producer.producer_code[0]
                 rule = producer.value[0]
-                self.config_rules[json_id]['producer'][producer_code] = eval(rule)
+                if not producer_code in self.config_rules[json_id]['producer']:
+                    self.config_rules[json_id]['producer'][producer_code] = []
+                self.config_rules[json_id]['producer'][producer_code].append(eval(rule))
 
