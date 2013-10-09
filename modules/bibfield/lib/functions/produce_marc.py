@@ -35,29 +35,32 @@ def produce_marc(self, fields=None):
     for field in fields:
         if field.startswith('__'):
             continue
-        marc_rules = get_producer_rules(field, 'xm')
-        for rule in marc_rules:
-            field = self.get(rule[0], None)
-            if field is None:
-                continue
-            if not isinstance(field, list):
-                field = [field, ]
-            for f in field:
-                for r in rule[1]:
-                    tmp_dict = {}
-                    for key, subfield in r.iteritems():
-                        if not subfield:
-                            tmp_dict[key] = f
-                        else:
-                            try:
-                                tmp_dict[key] = f[subfield]
-                            except:
+        try:
+            marc_rules = get_producer_rules(field, 'xm')
+            for rule in marc_rules:
+                field = self.get(rule[0], None)
+                if field is None:
+                    continue
+                if not isinstance(field, list):
+                    field = [field, ]
+                for f in field:
+                    for r in rule[1]:
+                        tmp_dict = {}
+                        for key, subfield in r.iteritems():
+                            if not subfield:
+                                tmp_dict[key] = f
+                            else:
                                 try:
-                                    tmp_dict[key] = self._try_to_eval(subfield, value=f)
-                                except Exception,e:
-                                    self['__error_messages.cerror[n]'] = 'Producer CError - Unable to produce %s - %s' % (field, str(e))
-                    if tmp_dict:
-                        out.append(tmp_dict)
+                                    tmp_dict[key] = f[subfield]
+                                except:
+                                    try:
+                                        tmp_dict[key] = self._try_to_eval(subfield, value=f)
+                                    except Exception,e:
+                                        self['__error_messages.cerror[n]'] = 'Producer CError - Unable to produce %s - %s' % (field, str(e))
+                        if tmp_dict:
+                            out.append(tmp_dict)
+        except KeyError:
+            self['__error_messages.cerror[n]'] = 'Producer CError - No producer rule for field %s' % field
     return out
 
 
