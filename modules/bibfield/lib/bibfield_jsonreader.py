@@ -159,6 +159,8 @@ class JsonReader(BibFieldDict):
         from collections import Iterable
         def encode_for_marcxml(value):
             from invenio.textutils import encode_for_xml
+            if isinstance(value, unicode):
+                value = value.encode('utf8')
             return encode_for_xml(str(value))
 
         export = '<record>'
