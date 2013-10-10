@@ -577,7 +577,7 @@ def format_with_format_template(format_template_filename, bfo,
                 return unicodifier(f(*args, **kwds))
             return wrapper
 
-        if bfo.recID is not None:
+        if bfo.xml_record is None:
             record = bibfield_get_record(bfo.recID)
         else:
             record = bibfield_create_record(bfo.xml_record, master_format='marc')
