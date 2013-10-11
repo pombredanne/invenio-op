@@ -59,9 +59,11 @@ identifiers = [
     ('urn:nbn:de:101:1-201102033592', ['urn']),
     ('PMC2631623', ['pmcid']),
     ('2011ApJS..192...18K', ['ads']),
+    ('ads:2011ApJS..192...18K', ['ads']),
     ('0000 0002 1825 0097', ['orcid', 'isni']),
     ('0000-0002-1694-233X', ['orcid', 'isni']),
     ('1422-4586-3573-0476', ['isni']),
+    ('arXiv:1310.2590', ['arxiv'])
 ]
 
 
@@ -82,6 +84,9 @@ class PersistentIdentifierUtilities(InvenioTestCase):
             for s in schemes:
                 self.assertTrue(getattr(pidutils, 'is_%s' % s)(i))
 
+    def test_normalize_pid(self):
+        for i, expected_schemes in identifiers:
+            print pidutils.normalize_pid(i, expected_schemes[0])
 
 
 TEST_SUITE = make_test_suite(PersistentIdentifierUtilities)
