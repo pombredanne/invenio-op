@@ -89,6 +89,32 @@ def recipe(path, repository, depends_on=None, release=False):
                                        release=release)
 
 
+@manager.command
+def inspectdb():
+    """Inspect database for missing tables"""
+
+    print ">>> Checking database..."
+
+    from sqlalchemy import event
+    from invenio.inveniocfg import test_db_connection
+    from invenio.sqlalchemyutils import db, autodiscover_models
+
+    test_db_connection()
+    autodiscover_models()
+    tables = db.metadata.sorted_tables
+
+    missing = 0
+    for i, table in enumerate(tables):
+        if not table.exists(bind=db.engine):
+            print '>>> Found missing table', table
+            missing += 1
+
+    if missing == 0:
+        print ">>> No tables missing for models."
+    else:
+        print "ERROR: Found %s missing tables." % missing
+
+
 def main():
     from invenio.webinterface_handler_flask import create_invenio_flask_app
     app = create_invenio_flask_app()
