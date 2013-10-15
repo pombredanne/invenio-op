@@ -21,15 +21,13 @@
 from invenio.bibworkflow_tasks.test_tasks import task_a, task_b
 from invenio.bibworkflow_workflow_definition import WorkflowDefinition
 
+__all__ = ['test_workflow']
 
-class test_workflow(WorkflowDefinition):
-    def __init__(self):
-        super(test_workflow, self).__init__()
-        self.definition = [task_a(1),
-                           task_b,
-                           task_a(1),
-                           task_a(4),
-                           task_a(1),
-                           task_a(1),
-                           task_b,
-                           task_a(13)]
+test_workflow = [task_a(1),
+                 task_b,
+                 task_a(1),
+                 task_a(4),
+                 task_a(1),
+                 task_a(1),
+                 task_b,
+                 task_a(13)]
