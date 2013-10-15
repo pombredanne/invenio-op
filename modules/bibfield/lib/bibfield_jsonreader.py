@@ -284,14 +284,20 @@ class JsonReader(BibFieldDict):
                             if rule['only_if_master_value'] and not all(self._try_to_eval(rule['only_if_master_value'], value=element)):
                                 returned_value = returned_value or False
                             else:
-                                self[field_name] = self._try_to_eval(rule['value'], value=element)
-                                returned_value = returned_value or True
+                                try:
+                                    self[field_name] = self._try_to_eval(rule['value'], value=element)
+                                    returned_value = returned_value or True
+                                except Exception, e:
+                                    self['__error_messages.error[n]'] = ' Rule Error - Unable to evaluate %s - %s' % (field_name, str(e))
                         return returned_value
                     else:
                         if rule['only_if_master_value'] and not all(self._try_to_eval(rule['only_if_master_value'], value=elements)):
                             return False
                         else:
-                            self[field_name] = self._try_to_eval(rule['value'], value=elements)
+                            try:
+                                self[field_name] = self._try_to_eval(rule['value'], value=elements)
+                            except Exception, e:
+                                self['__error_messages.error[n]'] = 'Rule Error - Unable to evaluate %s - %s' % (field_name, str(e))
             for alias in aliases:
                 self['__aliases'][alias] = field_name
             return True
