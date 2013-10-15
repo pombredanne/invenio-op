@@ -299,6 +299,8 @@ def create_invenio_flask_app(**kwargs_config):
         if not CFG_FLASK_SERVE_STATIC_FILES:
             abort(404)
         else:
+            if isinstance(kwargs.get('filename', None), unicode):
+                kwargs['filename'] = kwargs['filename'].encode('utf8')
             static_file_response = _app.send_static_file(*args, **kwargs)
             if request.method in ['POST', 'PUT']:
                 abort(405)
