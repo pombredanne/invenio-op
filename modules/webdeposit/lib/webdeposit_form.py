@@ -31,7 +31,8 @@ Default group metadata.
 
 CFG_FIELD_FLAGS = [
     'hidden',
-    'disabled'
+    'disabled',
+    'touched',
 ]
 """
 List of WTForm field flags to be saved in draft.

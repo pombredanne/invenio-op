@@ -39,6 +39,14 @@ def replace_field_data(field_name, getter=None):
     return _inner
 
 
+def set_flag(flag_name):
+    """
+    Returns a processor, which will set a given flag on a field.
+    """
+    def _inner(form, field, submit=False):
+        setattr(field.flags, flag_name, True)
+    return _inner
+
 #
 # PID processors
 #
