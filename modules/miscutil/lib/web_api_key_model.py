@@ -44,7 +44,8 @@ except ImportError:
         return "%x" % random.getrandbits(16*8)
 from urllib import urlencode, basejoin
 
-from invenio.config import CFG_WEB_API_KEY_ALLOWED_URL
+from invenio.config import CFG_WEB_API_KEY_ALLOWED_URL, \
+    CFG_WEB_API_KEY_ENABLE_SIGNATURE
 from invenio.access_control_config import CFG_WEB_API_KEY_STATUS
 
 
@@ -178,14 +179,16 @@ class WebAPIKey(db.Model):
         if 'apikey' in request.values:
             api_key = request.values['apikey']
 
-        if 'signature' in request.values:
-            signature = request.values['signature']
+        if not CFG_WEB_API_KEY_ENABLE_SIGNATURE:
+            if 'signature' in request.values:
+                signature = request.values['signature']
 
         if 'timestamp' in request.values:
             timestamp = request.values['timestamp']
 
         # Check if the request is well built
-        if api_key is None or signature is None:
+        if api_key is None or (signature is None and
+           CFG_WEB_API_KEY_ENABLE_SIGNATURE):
             return -1
 
         # Remove signature from the url params
@@ -230,17 +233,17 @@ class WebAPIKey(db.Model):
         if not len(keys):
             return -1
         key = keys[0]
-
         uid = key.id_user
-        secret_key = key.secret
-        server_signature = cls.get_server_signature(secret_key, url_req)
-        if signature == server_signature:
-            #If the signature is fine, log the key activity and return the UID
-            register_customevent("apikeyusage", [uid, api_key, path, url_req])
-            return uid
-        else:
-            print 'wrong signature'
-            return -1
+
+        if CFG_WEB_API_KEY_ENABLE_SIGNATURE:
+            secret_key = key.secret
+            server_signature = cls.get_server_signature(secret_key, url_req)
+            if signature != server_signature:
+                return -1
+
+        # Log the key activity and return the UID
+        register_customevent("apikeyusage", [uid, api_key, path, url_req])
+        return uid
 
     @classmethod
     def build_web_request(cls, path, params=None, uid=-1, api_key=None, timestamp=True):
@@ -309,13 +312,14 @@ class WebAPIKey(db.Model):
                           query,
                           parsed_url.fragment))
 
-        try:
-            secret_key = cls.query.filter_by(id=api_key).one().secret
-        except NoResultFound:
-            return ''
+        if CFG_WEB_API_KEY_ENABLE_SIGNATURE:
+            try:
+                secret_key = cls.query.filter_by(id=api_key).one().secret
+            except NoResultFound:
+                return ''
 
-        signature = cls.get_server_signature(secret_key, url)
-        params['signature'] = signature
+            signature = cls.get_server_signature(secret_key, url)
+            params['signature'] = signature
         query = urlencode(params)
         return urlunparse((parsed_url.scheme,
                            parsed_url.netloc,
