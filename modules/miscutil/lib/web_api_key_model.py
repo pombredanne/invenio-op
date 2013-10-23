@@ -44,8 +44,13 @@ except ImportError:
         return "%x" % random.getrandbits(16*8)
 from urllib import urlencode, basejoin
 
-from invenio.config import CFG_WEB_API_KEY_ALLOWED_URL, \
-    CFG_WEB_API_KEY_ENABLE_SIGNATURE
+from invenio.config import CFG_WEB_API_KEY_ALLOWED_URL
+try:
+    from invenio.config import CFG_WEB_API_KEY_ENABLE_SIGNATURE
+except ImportError:
+    CFG_WEB_API_KEY_ENABLE_SIGNATURE = True
+
+
 from invenio.access_control_config import CFG_WEB_API_KEY_STATUS
 
 
