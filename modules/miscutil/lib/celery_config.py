@@ -51,7 +51,7 @@ CELERYD_MAX_TASKS_PER_CHILD = getattr(config, "CFG_CELERYD_MAX_TASKS_PER_CHILD",
 ## ------------
 CELERY_SEND_TASK_ERROR_EMAILS = bool(getattr(config, "CFG_SITE_ADMIN_EMAIL_EXCEPTIONS", False))
 try:
-    ADMINS = [('', x.strip()) for x in getattr(config, "CFG_SITE_EMERGENCY_EMAIL_ADDRESSES", {})['*'].explode(",")]
+    ADMINS = [('', x.strip()) for x in getattr(config, "CFG_SITE_EMERGENCY_EMAIL_ADDRESSES", {})['*'].split(",")]
 except Exception:
     ADMINS = ()
 SERVER_EMAIL = getattr(config, "CFG_SITE_ADMIN_EMAIL", "celery@localhost")
