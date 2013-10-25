@@ -93,7 +93,7 @@ def request_record(f):
 
         g.bibrec = Bibrec.query.get(recid)
         record = get_record(recid)
-        title = record.get('title.title', '')
+        title = record.get('title', '')
 
         b = [(_('Home'), '')] + collection.breadcrumbs()[1:]
         b += [(title, 'record.metadata', dict(recid=recid))]
