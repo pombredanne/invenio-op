@@ -60,6 +60,10 @@ class JsonReader(BibFieldDict):
         """
         blob -> _prepare_blob(...) -> rec_tree -> _translate(...) -> rec_json -> check_record(...)
         """
+
+        for key, value in PluginContainer(os.path.join(CFG_PYLIBDIR, 'invenio', 'bibfield_functions', 'produce_*.py')).iteritems():
+            setattr(JsonReader, key, value)
+
         super(JsonReader, self).__init__()
         self.blob_wrapper = blob_wrapper
         self.rec_tree = None  # all record information represented as a tree (intermediate structure)
@@ -353,10 +357,6 @@ class JsonReader(BibFieldDict):
                             remove_none_values(element)
         remove_none_values(self.rec_json)
 
-
-
-for key, value in PluginContainer(os.path.join(CFG_PYLIBDIR, 'invenio', 'bibfield_functions', 'produce_json_for_*.py')).iteritems():
-    setattr(JsonReader, key, value)
 
 ## Compulsory plugin interface
 readers = JsonReader
