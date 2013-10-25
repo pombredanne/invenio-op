@@ -43,7 +43,7 @@ from invenio.bibworkflow_api import continue_oid
 from invenio.webdeposit_load_forms import forms
 from invenio.webdeposit_form import CFG_FIELD_FLAGS, DataExporter
 from invenio.webdeposit_signals import file_uploaded
-from invenio.webdeposit_storage import Storage
+from invenio.webdeposit_storage import Storage, DepositionStorage
 
 
 #
@@ -700,7 +700,11 @@ class Deposition(object):
         self.type = DepositionType.get(state['type'])
         self.title = state['title']
         self.files = [
-            DepositionFile.factory(f_state, uuid=f_state['id'])
+            DepositionFile.factory(
+                f_state,
+                uuid=f_state['id'],
+                backend=DepositionStorage(self.id),
+            )
             for f_state in state['files']
         ]
         self.drafts = dict(
@@ -863,7 +867,9 @@ class Deposition(object):
     def add_file(self, deposition_file):
         self.files.append(deposition_file)
         file_uploaded.send(
-            self.type, deposition=self, deposition_file=deposition_file
+            self.type.get_identifier(),
+            deposition=self,
+            deposition_file=deposition_file,
         )
 
     def remove_file(self, file_id):
@@ -938,11 +944,13 @@ class Deposition(object):
         return obj
 
     @classmethod
-    def get_depositions(cls, user, type=None):
+    def get_depositions(cls, user=None, type=None):
         params = [
-            Workflow.module_name == 'webdeposit',
-            BibWorkflowObject.id_user == user.get_id()
+        Workflow.module_name == 'webdeposit',
         ]
+
+        if user:
+            params.append(BibWorkflowObject.id_user == user.get_id())
 
         if type:
             params.append(Workflow.name == type.get_identifier())
