@@ -227,6 +227,11 @@ class FieldData(DataSet):
         id = 39
         name = u'miscellaneous'
 
+    class Field_40:
+        code = u'tag'
+        id = 40
+        name = u'tag'
+
 
 class TagData(DataSet):
 
