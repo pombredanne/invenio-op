@@ -274,6 +274,11 @@ function webdeposit_handle_field_values(name, value) {
             if(CKEDITOR.instances[name].getData(value) != value) {
                 CKEDITOR.instances[name].setData(value);
             }
+        } else if (field_lists !== undefined && name in field_lists &&
+                   value instanceof Array) {
+            for(var i = 0; i < value.length; i++){
+                field_lists[name].update_element(value[i], i);
+            }
         } else {
             if($('[name=' + name + ']').val() != value) {
                 $('[name=' + name + ']').val(value);
@@ -839,9 +844,7 @@ function webdeposit_submit(url, form_selector, dialog){
     };
 
     $(selector).each(function(){
-        field_lists[$(this).attr('id')] = {
-            append_element: $(this).fieldlist(opts)
-        };
+        field_lists[$(this).attr('id')] = $(this).fieldlist(opts);
     });
 }
 
@@ -1164,11 +1167,7 @@ $.fn.fieldlist = function(opts) {
                 $.each(newdata, function(field, value){
                     var input = root.find(selector_prefix+field);
                     if(input.length !== 0) {
-                        // Keep old value
-                        if(input.is(":focus")){
-                            console.log(selector_prefix+field + " has focus");
-                        }
-                        input.val(input.val()+value);
+                        input.val(value);
                     }
                 });
             } else {
@@ -1233,6 +1232,20 @@ $.fn.fieldlist = function(opts) {
         // Callback
         if (options.updated) {
             options.updated(options, ui.item);
+        }
+    };
+
+    var update_element = function (data, idx){
+        //
+        // Update action
+        //
+
+        // Update elements indexes of all other elements
+        var all_elements = $('#' + options.prefix + " ." + options.element_css_class);
+        var num_elements = all_elements.length;
+        if (idx < num_elements){
+            element = $(all_elements[idx]);
+            update_element_values(element, data, idx, '#'+options.prefix+options.sep+idx+options.sep);
         }
     };
 
@@ -1346,7 +1359,11 @@ $.fn.fieldlist = function(opts) {
 
     create(this);
 
-    return append_element;
+    return {
+        append_element: append_element,
+        update_element: update_element,
+        options: options,
+    };
 };
 
 /** Field list plugin defaults */

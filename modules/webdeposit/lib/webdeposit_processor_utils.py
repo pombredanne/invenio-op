@@ -62,6 +62,8 @@ class PidSchemeDetection(object):
             schemes = pidutils.detect_identifier_schemes(field.data)
             if schemes:
                 getattr(form, self.set_field).data = schemes[0]
+            else:
+                getattr(form, self.set_field).data = ''
 
 
 class PidNormalize(object):
@@ -73,7 +75,8 @@ class PidNormalize(object):
 
     def __call__(self, form, field, submit=False):
         scheme = getattr(form, self.scheme_field).data
-        field.data = pidutils.normalize_pid(field.data, scheme=scheme)
+        if scheme:
+            field.data = pidutils.normalize_pid(field.data, scheme=scheme)
 
 
 #
