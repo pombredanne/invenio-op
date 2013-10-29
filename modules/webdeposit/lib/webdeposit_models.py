@@ -414,7 +414,7 @@ class DepositionDraftCacheManager(object):
             draft_id, form_class=form_class
         )
 
-        draft.process(self.data, complete_form=True)
+        draft.process(self.data)
 
         if clear:
             self.data = {}
