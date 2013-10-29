@@ -35,6 +35,7 @@ pylib_DATA = __init__.py \
              webdeposit_models.py \
              webdeposit_processor_utils.py \
              webdeposit_regression_tests.py \
+             webdeposit_restapi.py \
              webdeposit_signals.py \
              webdeposit_storage.py \
              webdeposit_validation_utils.py \

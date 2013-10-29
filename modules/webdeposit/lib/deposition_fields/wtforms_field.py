@@ -88,6 +88,9 @@ class FormField(WebDepositField, wtforms.FormField):
         Preprocess formdata in case we are passed a JSON data structure.
         """
         if formdata and self.name in formdata:
+            if not isinstance(formdata[self.name], dict):
+                raise ValueError("Got unexpected value type")
+
             formdata = formdata[self.name]
             formdata = MultiDict(dict([
                 ("%s%s%s" % (self.name, self.separator, k), v)
@@ -151,6 +154,12 @@ class FieldList(WebDepositField, wtforms.FieldList):
         #Needed so subclasses can customize which entries are returned
         return self.entries
 
+    def _add_entry(self, *args, **kwargs):
+        try:
+            return super(FieldList, self)._add_entry(*args, **kwargs)
+        except ValueError, e:
+            self.process_errors.append(e.args[0])
+
     def _extract_indices(self, prefix, formdata):
         """
         Yield indices of any keys with given prefix.
@@ -184,7 +193,7 @@ class FieldList(WebDepositField, wtforms.FieldList):
 
     def validate(self, form, extra_validators=tuple()):
         """ Adapted to use self.get_entries() instead of self.entries """
-        self.errors = []
+        self.errors = list(self.process_errors)
 
         # Run validators on all entries within
         for subfield in self.get_entries():
@@ -195,6 +204,10 @@ class FieldList(WebDepositField, wtforms.FieldList):
         stop_validation = self._run_validation_chain(form, chain)
 
         return len(self.errors) == 0
+
+    def process(self, *args, **kwargs):
+        self.process_errors = []
+        return super(FieldList, self).process(*args, **kwargs)
 
     def post_process(self, form=None, formfields=[], extra_processors=[],
                      submit=False):

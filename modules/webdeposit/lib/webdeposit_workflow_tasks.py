@@ -24,7 +24,7 @@
 import os
 from tempfile import mkstemp
 
-from flask import current_app, abort
+from flask import current_app, abort, request
 
 from invenio.bibtask import task_low_level_submission, \
     bibtask_allocate_sequenceid
@@ -35,11 +35,18 @@ from invenio.webdeposit_models import Deposition, Agent, \
     DepositionDraftCacheManager
 from invenio.webuser_flask import current_user
 from invenio.errorlib import register_exception
+from invenio.restapi import error_codes
+
 try:
     from invenio.pidstore_model import PersistentIdentifier
     HAS_PIDSUPPORT = True
 except ImportError:
     HAS_PIDSUPPORT = False
+
+
+def is_api_request(obj, eng):
+    """ Check if request is an API request """
+    return getattr(request, 'is_api_request', False)
 
 
 def authorize_user(action, **params):
@@ -61,55 +68,72 @@ def authorize_user(action, **params):
     return _authorize_user
 
 
-def prefill_draft(form_class, draft_id='_default', clear=True):
+def prefill_draft(draft_id='_default', clear=True):
     """
     Fill draft values with values from pre-filled cache
     """
     def _prefill_draft(obj, eng):
-        draft_cache = DepositionDraftCacheManager.get()
-        if draft_cache.has_data():
-            d = Deposition(obj)
-            draft_cache.fill_draft(
-                d, draft_id, form_class=form_class, clear=clear
-            )
-            d.update()
+        if not getattr(request, 'is_api_request', False):
+            draft_cache = DepositionDraftCacheManager.get()
+            if draft_cache.has_data():
+                d = Deposition(obj)
+                draft_cache.fill_draft(d, draft_id, clear=clear)
+                d.update()
     return _prefill_draft
 
 
-def render_form(form_class, draft_id='_default'):
+def render_form(draft_id='_default'):
     """
     Renders a form if the draft associated with it has not yet been completed.
 
-    :param form_class: The form class which should be rendered.
     :param draft_id: The name of the draft to create. Must be specified if you
         put more than two ``render_form'''s in your deposition workflow.
     """
     def _render_form(obj, eng):
         d = Deposition(obj)
-        draft = d.get_or_create_draft(draft_id, form_class=form_class)
+        draft = d.get_or_create_draft(draft_id)
 
-        if draft.is_completed():
-            eng.jumpCallForward(1)
+        if getattr(request, 'is_api_request', False):
+            form = draft.get_form(validate_draft=True)
+            if form.errors:
+                error_messages = []
+                for field, msgs in form.errors:
+                    for m in msgs:
+                        error_messages.append(
+                            field=field,
+                            message=m,
+                            code=error_codes['validation_error'],
+                        )
+
+                d.set_render_context(dict(
+                    message="Bad request",
+                    status=400,
+                    errors=error_messages,
+                ))
+                eng.halt("API: Draft did not validate")
         else:
-            form = draft.get_form(validate_draft=draft.validate)
-            form.validate = True
+            if draft.is_completed():
+                eng.jumpCallForward(1)
+            else:
+                form = draft.get_form(validate_draft=draft.validate)
+                form.validate = True
 
-            d.set_render_context(dict(
-                template_name_or_list=form.get_template(),
-                deposition=d,
-                deposition_type=(
-                    None if d.type.is_default() else d.type.get_identifier()
-                ),
-                uuid=d.id,
-                draft=draft,
-                form=form,
-                my_depositions=Deposition.get_depositions(
-                    current_user, type=d.type
-                ),
-            ))
-
-            d.update()
-            eng.halt('Wait for form submission.')
+                d.set_render_context(dict(
+                    template_name_or_list=form.get_template(),
+                    deposition=d,
+                    deposition_type=(
+                        None if d.type.is_default() else
+                        d.type.get_identifier()
+                    ),
+                    uuid=d.id,
+                    draft=draft,
+                    form=form,
+                    my_depositions=Deposition.get_depositions(
+                        current_user, type=d.type
+                    ),
+                ))
+                d.update()
+                eng.halt('Wait for form submission.')
     return _render_form
 
 
@@ -163,7 +187,6 @@ def mint_pid(pid_field='doi', pid_creator=None, pid_store_type='doi',
         if not pid:
             # No pid found in recjson, so create new pid with user supplied
             # function.
-            current_app.logger.info("Registering pid %s" % pid_text)
             pid_text = recjson[pid_field] = pid_creator(recjson)
         else:
             # Pid found - check if it should be minted
@@ -220,9 +243,6 @@ def finalize_record_sip():
 
         sip.package = jsonreader.legacy_export_as_marc()
 
-        current_app.logger.info(jsonreader['__error_messages'])
-        current_app.logger.info(sip.package)
-
         d.update()
     return _finalize_sip
 
@@ -235,7 +255,6 @@ def upload_record_sip():
     before
     """
     def create(obj, dummy_eng):
-        current_app.logger.info("Upload sip")
         d = Deposition(obj)
 
         sip = d.get_latest_sip(include_sealed=False)

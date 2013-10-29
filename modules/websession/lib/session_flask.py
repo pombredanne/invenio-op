@@ -237,8 +237,17 @@ class InvenioSessionInterface(SessionInterface):
         return timedelta(days=1)
 
     def open_session(self, app, request):
-        sid = request.cookies.get(app.session_cookie_name) or \
-              request.args.get('session_id')
+        request.is_api_request = False
+
+        restful = app.extensions.get('restful')
+        if restful:
+            if request.endpoint in restful.endpoints:
+                request.is_api_request = True
+
+        sid = None
+        if not request.is_api_request:
+            sid = request.cookies.get(app.session_cookie_name) or \
+                  request.args.get('session_id')
         if not sid:
             sid = self.generate_sid()
             return self.session_class(sid=sid)
@@ -257,6 +266,9 @@ class InvenioSessionInterface(SessionInterface):
         return self.session_class(sid=sid)
 
     def save_session(self, app, session, response):
+        if request.is_api_request:
+            return
+
         domain = self.get_cookie_domain(app)
         from invenio.websession_model import Session
         if not session:

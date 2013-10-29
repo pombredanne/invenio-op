@@ -435,7 +435,6 @@ def delete_file(deposition_type=None, uuid=None):
 
         return ('', 200)
     except Exception, e:
-        print "DEBUG", e
         return ('', 400)
 
 
