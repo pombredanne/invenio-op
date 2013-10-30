@@ -32,6 +32,7 @@ from flask import current_app, \
     send_file, \
     abort, \
     make_response
+from werkzeug.datastructures import MultiDict
 from werkzeug.utils import secure_filename
 
 from invenio.webinterface_handler_flask_utils import _, InvenioBlueprint
@@ -43,7 +44,7 @@ from invenio.webdeposit_signals import template_context_created
 from invenio.webdeposit_models import Deposition, DepositionType, \
     DepositionFile, InvalidDepositionType, DepositionDoesNotExists, \
     DraftDoesNotExists, FormDoesNotExists, DepositionNotDeletable, \
-    DepositionDraftCacheManager
+    DepositionDraftCacheManager, FilenameAlreadyExists
 from invenio.webdeposit_storage import ChunkedDepositionStorage, \
     DepositionStorage, ExternalFile, UploadError
 
@@ -75,23 +76,26 @@ def deposition_error_handler(endpoint='.index'):
         def inner(*args, **kwargs):
             try:
                 return f(*args, **kwargs)
-            except InvalidDepositionType, dummy_e:
+            except InvalidDepositionType:
                 if request.is_xhr:
                     abort(400)
                 flash(_("Invalid deposition type."), 'error')
                 return redirect(url_for(endpoint))
-            except (DepositionDoesNotExists,), dummy_e:
+            except (DepositionDoesNotExists,):
                 flash(_("Deposition does not exists."), 'error')
                 return redirect(url_for(endpoint))
-            except (DepositionNotDeletable,), dummy_e:
+            except (DepositionNotDeletable,):
                 flash(_("Deposition cannot be deleted."), 'error')
                 return redirect(url_for(endpoint))
-            except (DraftDoesNotExists,), dummy_e:
+            except (DraftDoesNotExists,):
                 abort(400)
-            except (FormDoesNotExists,), dummy_e:
+            except (FormDoesNotExists,):
                 abort(400)
-            except (UploadError,), dummy_e:
+            except (FilenameAlreadyExists,):
                 abort(400)
+            except (UploadError,):
+                abort(400)
+
         return inner
     return decorator
 
@@ -141,7 +145,7 @@ def deposition_type_index(deposition_type):
 
     current_app.config['breadcrumbs_map'][request.endpoint] = \
         [(_('Home'), '')] + blueprint.breadcrumbs + \
-         [(deptype.name_plural, None)]
+        [(deptype.name_plural, None)]
 
     draft_cache = DepositionDraftCacheManager.from_request()
     draft_cache.save()
@@ -242,8 +246,8 @@ def save(deposition_type=None, uuid=None, draft_id=None):
     is_submit = request.args.get('submit') == '1'
     is_complete_form = request.args.get('all') == '1'
 
-    data = request.json
-    if 'files' in data:
+    data = request.json or MultiDict({})
+    if data and 'files' in data:
         deposition.sort_files(data['files'])
 
     # get_draft() and process() will raise an exception if draft doesn't exist
@@ -357,6 +361,10 @@ def upload_url(deposition_type=None, uuid=None):
 
     df = DepositionFile(backend=DepositionStorage(deposition.id))
 
+    for f in deposition.files:
+        if f.name == url_file.filename:
+            raise FilenameAlreadyExists(f.name)
+
     if df.save(url_file, filename=secure_filename(url_file.filename)):
         deposition.add_file(df)
         deposition.save()
@@ -395,8 +403,12 @@ def upload_file(deposition_type=None, uuid=None):
     df = DepositionFile(backend=backend)
 
     if df.save(uploaded_file, filename=filename, **kwargs):
-        deposition.add_file(df)
-        deposition.save()
+        try:
+            deposition.add_file(df)
+            deposition.save()
+        except FilenameAlreadyExists, e:
+            df.delete()
+            raise e
         return jsonify(
             dict(filename=df.name, id=df.uuid, checksum=df.checksum)
         )

@@ -638,23 +638,46 @@ function webdeposit_init_plupload(max_size, selector, save_url, url, delete_url,
     });
 
     uploader.bind('FilesAdded', function(up, files) {
+        var remove_files = [];
+        $.each(up.files, function(i, file) {
+            
+        });
+
         $(selector).show();
         $('#uploadfiles').removeClass("disabled");
         $('#file-table').show('slow');
         up.total.reset();
+        var filename_already_exists = [];
         $.each(files, function(i, file) {
-            $('#filelist').append(tpl_file_entry.render({
-                    id: file.id,
-                    filename: file.name,
-                    filesize: getBytesWithUnit(file.size),
-                    removeable: true,
-                    progress: 0
-            }));
-            $('#filelist #' + file.id).show('fast');
-            $('#' + file.id + ' .rmlink').on("click", function(event){
-                uploader.removeFile(file);
-            });
+            // Check for existing file
+            var removed = false;
+            for(var j = 0; j<up.files.length; j++){
+                existing_file = up.files[j];
+                if(existing_file.id != file.id && file.name == existing_file.name){
+                    filename_already_exists.push(file.name);
+                    up.removeFile(file);
+                    var removed = true;
+                }
+            }
+            if(!removed){
+                $('#filelist').append(tpl_file_entry.render({
+                        id: file.id,
+                        filename: file.name,
+                        filesize: getBytesWithUnit(file.size),
+                        removeable: true,
+                        progress: 0
+                }));
+                $('#filelist #' + file.id).show('fast');
+                $('#' + file.id + ' .rmlink').on("click", function(event){
+                    uploader.removeFile(file);
+                });    
+            }
         });
+        if(filename_already_exists.length > 0) {
+            $('#upload-errors').hide();
+            $('#upload-errors').append('<div class="alert alert-warning"><a class="close" data-dismiss="alert" href="#">&times;</a><strong>Warning:</strong>' + filename_already_exists.join(", ") + " already exist.</div>");
+            $('#upload-errors').show('fast');    
+        }        
     });
 
     uploader.bind('FileUploaded', function(up, file, responseObj) {

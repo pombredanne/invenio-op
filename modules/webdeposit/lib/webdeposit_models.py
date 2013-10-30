@@ -79,6 +79,10 @@ class DepositionNotDeletable(DepositionError):
     pass
 
 
+class FilenameAlreadyExists(DepositionError):
+    """ Raised when an identical filename is already present in a deposition """
+    pass
+
 
 #
 # Helpers
@@ -865,6 +869,9 @@ class Deposition(object):
         return None
 
     def add_file(self, deposition_file):
+        for f in self.files:
+            if f.name == deposition_file.name:
+                raise FilenameAlreadyExists(deposition_file.name)
         self.files.append(deposition_file)
         file_uploaded.send(
             self.type.get_identifier(),
