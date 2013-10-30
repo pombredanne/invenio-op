@@ -50,7 +50,7 @@ class ExternalFile(object):
             info = self._file.info()
             content_disposition = info.getheader('Content-Disposition')
             if content_disposition:
-                for item in text.split(';'):
+                for item in content_disposition.split(';'):
                     item = item.strip()
                     if item.strip().startswith('filename='):
                         self.filename = item[len('filename="'):-len('"')]
@@ -64,9 +64,9 @@ class ExternalFile(object):
             except Exception:
                 pass
         except InvenioBibdocfileUnauthorizedURL, e:
-            raise WebDepositUploadError(str(e))
+            raise UploadError(str(e))
         except urllib2.URLError, e:
-            raise WebDepositUploadError('URL could not be opened: %s' % str(e))
+            raise UploadError('URL could not be opened: %s' % str(e))
 
     def close(self):
         self._file.close()
@@ -187,7 +187,7 @@ class ChunkedDepositionStorage(DepositionStorage):
             chunk = int(chunk)
             chunks = int(chunks)
         except (ValueError, TypeError):
-            raise WebDepositUploadError("Invalid chunk value: %s" % chunk)
+            raise UploadError("Invalid chunk value: %s" % chunk)
 
         # Store chunk
         chunk_filename = self.chunk_filename(filename, chunks, chunk)
