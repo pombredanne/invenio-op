@@ -748,7 +748,6 @@ AC_CONFIG_FILES([config.nice  \
      modules/bibupload/Makefile \
      modules/bibsort/Makefile \
      modules/bibsort/bin/Makefile \
-     modules/bibsort/bin/bibsort \
      modules/bibsort/lib/Makefile \
      modules/bibsort/etc/Makefile \
      modules/bibsort/doc/Makefile \
@@ -765,7 +764,6 @@ AC_CONFIG_FILES([config.nice  \
      modules/bibsword/lib/Makefile \
      modules/bibsword/etc/Makefile \
      modules/bibupload/bin/Makefile \
-     modules/bibupload/bin/bibupload \
      modules/bibupload/bin/batchuploader \
      modules/bibupload/doc/Makefile \
      modules/bibupload/doc/admin/Makefile \
@@ -866,7 +864,6 @@ AC_CONFIG_FILES([config.nice  \
      modules/webmessage/web/Makefile \
      modules/websearch/Makefile \
      modules/websearch/bin/Makefile \
-     modules/websearch/bin/webcoll \
      modules/websearch/doc/Makefile \
      modules/websearch/doc/admin/Makefile \
      modules/websearch/doc/hacking/Makefile \
