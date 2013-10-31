@@ -80,7 +80,7 @@ def unlock_all(app):
 
 
 def _db_conn():
-    current_app.teardown_appcontext(unlock_all)
+    current_app.teardown_appcontext_funcs.append(unlock_all)
     out = {}
     out[cfg['CFG_DATABASE_HOST']] = {}
     out[cfg['CFG_DATABASE_SLAVE']] = {}
