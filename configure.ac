@@ -614,7 +614,6 @@ AC_CONFIG_FILES([config.nice  \
      modules/bibconvert/etc/Makefile \
      modules/bibconvert/lib/Makefile \
      modules/bibdocfile/Makefile \
-     modules/bibdocfile/bin/bibdocfile \
      modules/bibdocfile/bin/Makefile \
      modules/bibdocfile/doc/Makefile \
      modules/bibdocfile/doc/hacking/Makefile \
@@ -657,7 +656,6 @@ AC_CONFIG_FILES([config.nice  \
      modules/bibfield/etc/Makefile \
      modules/bibformat/Makefile \
      modules/bibformat/bin/Makefile \
-     modules/bibformat/bin/bibreformat \
      modules/bibformat/doc/Makefile \
      modules/bibformat/doc/admin/Makefile \
      modules/bibformat/doc/hacking/Makefile \
@@ -681,7 +679,6 @@ AC_CONFIG_FILES([config.nice  \
      modules/oaiharvest/web/admin/Makefile \
      modules/oairepository/Makefile \
      modules/oairepository/bin/Makefile \
-     modules/oairepository/bin/oairepositoryupdater \
      modules/oairepository/doc/Makefile \
      modules/oairepository/doc/admin/Makefile \
      modules/oairepository/doc/hacking/Makefile \
@@ -691,7 +688,6 @@ AC_CONFIG_FILES([config.nice  \
      modules/oairepository/web/admin/Makefile \
      modules/bibindex/Makefile \
      modules/bibindex/bin/Makefile \
-     modules/bibindex/bin/bibindex \
      modules/bibindex/bin/bibstat \
      modules/bibindex/doc/Makefile \
      modules/bibindex/doc/admin/Makefile \
@@ -723,7 +719,6 @@ AC_CONFIG_FILES([config.nice  \
      modules/bibmerge/web/admin/Makefile \
      modules/bibrank/Makefile \
      modules/bibrank/bin/Makefile \
-     modules/bibrank/bin/bibrank \
      modules/bibrank/bin/bibrankgkb \
      modules/bibrank/doc/Makefile \
      modules/bibrank/doc/admin/Makefile \
