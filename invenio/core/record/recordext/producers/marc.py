@@ -17,9 +17,10 @@
 ## along with Invenio; if not, write to the Free Software Foundation, Inc.,
 ## 59 Temple Place, Suite 330, Boston, MA 02111-1307, USA.
 
-def produce_json_for_dc(self, fields=None):
+
+def produce(self, fields=None):
     """
-    Export the record in dublin core format.
+    Export the record in marc format.
 
     @param tags: list of tags to include in the output, if None or
                 empty list all available tags will be included.
@@ -35,8 +36,8 @@ def produce_json_for_dc(self, fields=None):
         if field.startswith('__'):
             continue
         try:
-            dc_rules = get_producer_rules(field, 'json_for_dc')
-            for rule in dc_rules:
+            marc_rules = get_producer_rules(field, 'xm')
+            for rule in marc_rules:
                 field = self.get(rule[0], None)
                 if field is None:
                     continue
