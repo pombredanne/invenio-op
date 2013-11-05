@@ -20,7 +20,7 @@
 """Unit tests for logic library."""
 
 from invenio.utils.logic import expr, Expr, to_cnf, pl_true
-from invenio.testutils import make_test_suite, run_test_suite, InvenioTestCase
+from invenio.testsuite import make_test_suite, run_test_suite, InvenioTestCase
 
 
 class exprExprOpsTest(InvenioTestCase):
