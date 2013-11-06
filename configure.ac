@@ -665,7 +665,6 @@ AC_CONFIG_FILES([config.nice  \
      modules/bibformat/etc/format_templates/Makefile \
      modules/bibformat/etc/output_formats/Makefile \
      modules/bibformat/lib/Makefile \
-     modules/bibformat/lib/elements/Makefile \
      modules/bibformat/web/Makefile \
      modules/bibformat/web/admin/Makefile \
      modules/oaiharvest/Makefile \
