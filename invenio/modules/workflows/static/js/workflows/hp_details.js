@@ -16,10 +16,6 @@
 // along with Invenio; if not, write to the Free Software Foundation, Inc.,
 // 59 Temple Place, Suite 330, Boston, MA 02111-1307, USA.
 
-function getURLParameter(name) {
-  return decodeURIComponent((new RegExp('[?|&]' + name + '=' + '([^&;]+?)(&|#|;|$)').exec(location.search)||[,""])[1].replace(/\+/g, '%20'))||null;
-}
-
 $(document).ready(function(){
 
     var url_base = "/admin/holdingpen";
@@ -48,7 +44,7 @@ $(document).ready(function(){
         jQuery.ajax({
             url: url_restart_record_prev + "?bwobject_id=" + bwo_id,
             success: function(json){
-                bootstrap_alert('Object restarted from previous task');        
+                bootstrap_alert('Object restarted from previous task');
             }
         });
     });
@@ -57,9 +53,9 @@ $(document).ready(function(){
         bwo_id = $(this).attr('name');
         console.log(bwo_id);
         jQuery.ajax({
-            url: url_continue + "?bwobject_id=" + bwo_id,
+            url: "/admin/holdingpen/continue_record?bwobject_id=" + bwo_id,
             success: function(json){
-                bootstrap_alert('Object continued from next task');        
+                bootstrap_alert('Object continued from next task');
             }
         });
     });
@@ -75,7 +71,10 @@ $(document).ready(function(){
         });
     }
 
+    function getURLParameter(name) {
+      return decodeURIComponent((new RegExp('[?|&]' + name + '=' + '([^&;]+?)(&|#|;|$)').exec(location.search)||[,""])[1].replace(/\+/g, '%20'))||null;
+    }
+
     bwoid = getURLParameter('bwobject_id');
 
 });
-

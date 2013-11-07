@@ -178,8 +178,7 @@ install-jquery-plugins:
 	 git clone 'https://github.com/DataTables/Plugins.git' && \
 	 cp Plugins/integration/bootstrap/2/dataTables.bootstrap.css ${prefix}/var/www/css/dataTables.bootstrap.css && \
 	 cp Plugins/integration/bootstrap/2/dataTables.bootstrap.js ${prefix}/var/www/js/dataTables.bootstrap.js && \
-	 cp Plugins/integration/bootstrap/images/*.png ${prefix}/var/www/img/ && \
-	 ln -s ${prefix}/var/www/img/ ${prefix}/var/www/images) && \
+	 cp Plugins/integration/bootstrap/images/*.png ${prefix}/var/www/img/) && \
 	rm -rf /tmp/invenio-dt-bootstrap/plugins && \
 	mkdir /tmp/invenio-dt-bootstrap/plugins && \
 	(cd /tmp/invenio-dt-bootstrap/plugins && \
@@ -189,10 +188,6 @@ install-jquery-plugins:
 	 cp ColVis/media/images/*.png ${prefix}/var/www/img/) && \
 	cd ${prefix}/var/www/js && \
 	rm -rf /tmp/invenio-dt-bootstrap && \
-	wget https://google-code-prettify.googlecode.com/files/prettify-small-4-Mar-2013.tar.bz2 && \
-	tar -xf prettify-small-4-Mar-2013.tar.bz2 && \
-	cp google-code-prettify/prettify.css ${prefix}/var/www/css/ && \
-	rm prettify-small-4-Mar-2013.tar.bz2 && \
 	wget http://invenio-software.org/download/jquery/jquery.bookmark.package-1.4.0.zip && \
 	unzip jquery.tablesorter.zip -d tablesorter && \
 	rm jquery.tablesorter.zip && \

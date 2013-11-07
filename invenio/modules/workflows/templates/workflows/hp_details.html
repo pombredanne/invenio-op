@@ -33,7 +33,7 @@
                     {% if bwobject.version == 1 %}
                         <button class="btn btn-mini" name="final" onclick="setbwoid({{bwobject.id}})">Final</button>
                     {% else %}
-                        <button class="btn btn-mini disabled" name="final">Final</button>                        
+                        <button class="btn btn-mini disabled" name="final">Final</button>
                     {% endif %}
                     {% if bwobject.version == 2 %}
                         <button class="btn btn-mini" name="error" onclick="setbwoid({{bwobject.id}})">Error</button>
@@ -42,7 +42,7 @@
                     {% endif %}
                 </div>
 
-                {% if 'message' in bwobject.get_extra_data() and 
+                {% if 'message' in bwobject.get_extra_data() and
                     bwobject.get_extra_data()['widget'] != None %}
                     <div id="usermessage" class="alert">
                         {{bwobject.get_extra_data()['message']}}
@@ -63,7 +63,7 @@
                     </pre>
                 </div>
             </div>
-            
+
             <div class="span3">
                 <div id="action-area" class="alert">
                     <b>Actions</b>
@@ -74,7 +74,7 @@
                             {% else %}
                             <a class="btn btn-info btn-small disabled"><i class="icon-wrenchwhite icon-wrench"></i>Widget</a></br>
                             {% endif %}
-                            
+
                         </div>
 
                         <div id="static-actions" class="span6">
@@ -82,7 +82,7 @@
                             <button id="restart_button_prev" class="btn btn-small btn-block" rel="popover" name="{{ bwobject.id }}"/><i class="icon-step-backward"></i>Restart Task</button></br>
                             <button id="continue_button" class="btn btn-small btn-block" rel="popover" name="{{ bwobject.id }}"/><i class="icon-step-forward"></i>Skip Task</button></br>
                             <a id="delete_btn" href="#confirmationModal" role="button" class="btn btn-small btn-block btn-danger" data-toggle="modal"><i class="icon-trash"></i>Delete</a>
-            
+
                             <div id="confirmationModal" class="modal hide fade" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
                               <div class="modal-header">
                                 <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
@@ -99,7 +99,7 @@
                         </div>
                     </div>
                 </div>
-                
+
                 <div class="well">
                     <div class="muted"><b>Workflow Definition:</b></div>
                     <b>{{workflow.name}}</b>
@@ -117,7 +117,7 @@
                     {% else %}
                         There were no errors.
                     {% endif %}
-                    
+
                     <div id="moreinfoModal" class="modal hide fade" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
                       <div class="modal-header">
                         <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
