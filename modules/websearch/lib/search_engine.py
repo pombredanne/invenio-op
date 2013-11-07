@@ -101,8 +101,8 @@ from invenio.bibindex_engine_utils import author_name_requires_phrase_search
 from invenio.bibindex_engine_washer import wash_index_term, lower_index_term, wash_author_name
 from invenio.bibindex_engine_config import CFG_BIBINDEX_SYNONYM_MATCH_TYPE
 from invenio.bibindex_engine_utils import get_idx_indexer
-from invenio.bibformat import format_record, format_records, get_output_format_content_type, create_excel
-from invenio.bibformat_config import CFG_BIBFORMAT_USE_OLD_BIBFORMAT
+from invenio.modules.formatter import format_record, format_records, get_output_format_content_type, create_excel
+from invenio.modules.formatter.config import CFG_BIBFORMAT_USE_OLD_BIBFORMAT
 from invenio.bibrank_downloads_grapher import create_download_history_graph_and_box
 from invenio.bibknowledge import get_kbr_values
 from invenio.data_cacher import DataCacher
@@ -5073,7 +5073,7 @@ def call_bibformat(recID, format="HD", ln=CFG_SITE_LANG, search_pattern=None, us
     BibFormat will decide by itself if old or new BibFormat must be used.
     """
 
-    from invenio.bibformat_utils import get_pdf_snippets
+    from invenio.modules.formatter.utils import get_pdf_snippets
 
     keywords = []
     if search_pattern is not None:
