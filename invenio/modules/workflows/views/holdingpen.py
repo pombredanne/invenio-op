@@ -189,6 +189,7 @@ def load_table():
     current_app.config['sSortDir_0'] = s_sortdir_0
 
     if sSearch:
+        from invenio.bibworkflow_containers import create_hp_containers
         bwolist = create_hp_containers(sSearch=sSearch)
 
     if 'iSortCol_0' in current_app.config:
