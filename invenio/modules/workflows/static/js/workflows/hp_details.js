@@ -53,7 +53,7 @@ $(document).ready(function(){
         bwo_id = $(this).attr('name');
         console.log(bwo_id);
         jQuery.ajax({
-            url: "/admin/holdingpen/continue_record?bwobject_id=" + bwo_id,
+            url: url_continue + "?bwobject_id=" + bwo_id,
             success: function(json){
                 bootstrap_alert('Object continued from next task');
             }
