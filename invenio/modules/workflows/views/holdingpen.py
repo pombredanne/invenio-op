@@ -188,21 +188,6 @@ def load_table():
     current_app.config['iSortCol_0'] = i_sortcol_0
     current_app.config['sSortDir_0'] = s_sortdir_0
 
-    if sSearch:
-        from invenio.bibworkflow_containers import create_hp_containers
-        bwolist = create_hp_containers(sSearch=sSearch)
-
-    if 'iSortCol_0' in current_app.config:
-        iSortCol_0 = int(iSortCol_0)
-        if iSortCol_0 != current_app.config['iSortCol_0'] \
-           or sSortDir_0 != current_app.config['sSortDir_0']:
-            bwolist = sort_bwolist(bwolist, iSortCol_0, sSortDir_0)
-
-    current_app.config['iDisplayStart'] = iDisplayStart
-    current_app.config['iDisplayLength'] = iDisplayLength
-    current_app.config['iSortCol_0'] = iSortCol_0
-    current_app.config['sSortDir_0'] = sSortDir_0
-
     table_data = {
         "aaData": []
     }
