@@ -27,7 +27,7 @@ import ConfigParser
 from itertools import islice
 from datetime import datetime
 
-from invenio.dbquery import run_sql, serialize_via_marshal, \
+from invenio.legacy.dbquery import run_sql, serialize_via_marshal, \
                             deserialize_via_marshal
 from invenio.bibindex_tokenizers.BibIndexJournalTokenizer import \
     CFG_JOURNAL_PUBINFO_STANDARD_FORM, \
