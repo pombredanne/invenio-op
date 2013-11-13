@@ -21,13 +21,13 @@
 
 __revision__ = "$Id$"
 
-
-from invenio.htmlutils import HTMLWasher, nmtoken_from_string, \
+from invenio.utils.html import HTMLWasher, nmtoken_from_string, \
      remove_html_markup, create_html_select, \
      CFG_TIDY_INSTALLED, \
      CFG_BEAUTIFULSOUP_INSTALLED, tidy_html, \
      escape_javascript_string
 from invenio.testsuite import make_test_suite, run_test_suite, InvenioTestCase
+
 
 class XSSEscapingTest(InvenioTestCase):
     """Test functions related to the prevention of XSS attacks."""
@@ -81,6 +81,7 @@ class XSSEscapingTest(InvenioTestCase):
         self.assertEqual(self.washer.wash(html_buffer=test_str),
                          '<a href="">link</a>')
 
+
 class CharactersEscapingTest(InvenioTestCase):
     """Test functions related to escaping reserved or forbidden characters """
 
@@ -95,6 +96,7 @@ class CharactersEscapingTest(InvenioTestCase):
         nmtoken = nmtoken_from_string(ascii_str)
         for char in nmtoken:
             self.assert_(char in ['.', '-', '_', ':'] or char.isalnum())
+
 
 class JavascriptCharactersEscapingTest(InvenioTestCase):
     """Test functions related to escaping Javascript characters for use in various context """
@@ -187,6 +189,7 @@ class JavascriptCharactersEscapingTest(InvenioTestCase):
         self.assertEqual(escape_javascript_string(input_string, escape_for_html=False, escape_quote_for_html=True),
                          output_string)
 
+
 class HTMLWashingTest(InvenioTestCase):
     """Test functions related to general washing of HTML source"""
 
@@ -228,6 +231,7 @@ class HTMLWashingTest(InvenioTestCase):
         test_str = '<style><!-- .myclass {color:#f00} --></style><span class="myclass">styled text</span>'
         self.assertEqual(self.washer.wash(html_buffer=test_str),
                          'styled text')
+
 
 class HTMLTidyingTest(InvenioTestCase):
     """Test functions related to tidying up HTML source"""
@@ -287,6 +291,7 @@ class HTMLTidyingTest(InvenioTestCase):
         self.assertEqual(res.replace('\n', '').replace(' ', ''),
                          self.html_buffer_1.replace('\n', '').replace(' ', ''))
 
+
 class HTMLMarkupRemovalTest(InvenioTestCase):
     """Test functions related to removing HTML markup."""
 
@@ -303,6 +308,7 @@ class HTMLMarkupRemovalTest(InvenioTestCase):
         test_expected = 'This is XtestX.'
         self.assertEqual(remove_html_markup(test_input, 'X'),
                          test_expected)
+
 
 class HTMLAutomaticLinksTransformation(InvenioTestCase):
     """Test functions related to transforming links into HTML context"""
@@ -342,6 +348,7 @@ class HTMLAutomaticLinksTransformation(InvenioTestCase):
         self.assertEqual(self.washer.wash(html_buffer=body_input,
                                           automatic_link_transformation=True),
                          body_expected)
+
 
 class HTMLCreation(InvenioTestCase):
     """Test functions related to creation of HTML markup."""
