@@ -39,7 +39,6 @@ SUBDIRS = bibauthorid \
           bibsort \
           bibsword \
           bibupload \
-          bibworkflow \
           elmsubmit \
           miscutil \
           oaiharvest \
