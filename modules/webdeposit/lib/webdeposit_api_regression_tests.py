@@ -251,7 +251,7 @@ class WebDepositApiTest(WebDepositApiBaseTestCase):
         response = self.put(
             'depositionfileresource',
             urlargs=dict(resource_id=data['id'], file_id=file_data2['id']),
-            data=dict(name="another_test.pdf"),
+            data=dict(filename="another_test.pdf"),
             code=200,
         )
         self.assertEqual(file_data2['id'], response.json['id'])
@@ -259,8 +259,8 @@ class WebDepositApiTest(WebDepositApiBaseTestCase):
 
         # Bad renaming
         test_cases = [
-            dict(filename="another_test.pdf"),
-            dict(name="../../etc/passwd"),
+            dict(name="another_test.pdf"),
+            dict(filename="../../etc/passwd"),
         ]
         for test_case in test_cases:
             response = self.put(
@@ -908,7 +908,7 @@ class WebDepositZenodoApiTest(WebDepositApiBaseTestCase):
         response = self.put(
             'depositionfileresource',
             urlargs=dict(resource_id=res_id, file_id=files_list[0]['id']),
-            data=dict(name="another_test.pdf"),
+            data=dict(filename="another_test.pdf"),
             code=403,
         )
 

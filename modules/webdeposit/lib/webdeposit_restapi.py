@@ -54,7 +54,7 @@ draft_data_extended_schema['type'] = dict(type="string")
 draft_data_extended_schema['draft_id'] = dict(type="string")
 
 file_schema = dict(
-    name=dict(type="string", minlength=1, maxlength=255),
+    filename=dict(type="string", minlength=1, maxlength=255),
 )
 
 file_schema_list = dict(
@@ -425,7 +425,7 @@ class DepositionFileListResource(Resource):
 
         uploaded_file = request.files['file']
         filename = secure_filename(
-            request.form.get('name') or uploaded_file.filename
+            request.form.get('filename') or uploaded_file.filename
         )
 
         df = DepositionFile(backend=DepositionStorage(d.id))
@@ -541,8 +541,8 @@ class DepositionFileResource(Resource):
         if not d.type.authorize_file(d, df, 'update_metadata'):
             raise ForbiddenAction('update_metadata', df)
 
-        new_name = secure_filename(request.json['name'])
-        if new_name != request.json['name']:
+        new_name = secure_filename(request.json['filename'])
+        if new_name != request.json['filename']:
             abort(
                 400,
                 message="Bad request",
