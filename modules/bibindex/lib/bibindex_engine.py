@@ -55,7 +55,7 @@ from invenio.legacy.search_engine import perform_request_search, \
      search_unit_in_bibrec
 from invenio.legacy.dbquery import run_sql, DatabaseError, serialize_via_marshal, \
      deserialize_via_marshal, wash_table_column_name
-from invenio.bibindex_engine_washer import wash_index_term
+from invenio.legacy.bibindex.engine_washer import wash_index_term
 from invenio.bibtask import task_init, write_message, get_datetime, \
     task_set_option, task_get_option, task_get_task_param, \
     task_update_progress, task_sleep_now_if_required

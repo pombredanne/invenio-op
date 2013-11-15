@@ -94,13 +94,13 @@ from invenio.legacy.bibrecord import get_fieldvalues, get_fieldvalues_alephseq_l
 from invenio.legacy.bibrecord import create_record, record_xml_output
 from invenio.legacy.bibrank.record_sorter import get_bibrank_methods, is_method_valid, rank_records as rank_records_bibrank
 from invenio.legacy.bibrank.downloads_similarity import register_page_view_event, calculate_reading_similarity_list
-from invenio.bibindex_engine_stemmer import stem
+from invenio.legacy.bibindex.engine_stemmer import stem
 from invenio.bibindex_tokenizers.BibIndexDefaultTokenizer import BibIndexDefaultTokenizer
 from invenio.bibindex_tokenizers.BibIndexCJKTokenizer import BibIndexCJKTokenizer, is_there_any_CJK_character_in_text
-from invenio.bibindex_engine_utils import author_name_requires_phrase_search
-from invenio.bibindex_engine_washer import wash_index_term, lower_index_term, wash_author_name
-from invenio.bibindex_engine_config import CFG_BIBINDEX_SYNONYM_MATCH_TYPE
-from invenio.bibindex_engine_utils import get_idx_indexer
+from invenio.legacy.bibindex.engine_utils import author_name_requires_phrase_search
+from invenio.legacy.bibindex.engine_washer import wash_index_term, lower_index_term, wash_author_name
+from invenio.legacy.bibindex.engine_config import CFG_BIBINDEX_SYNONYM_MATCH_TYPE
+from invenio.legacy.bibindex.adminlib import get_idx_indexer
 from invenio.modules.formatter import format_record, format_records, get_output_format_content_type, create_excel
 from invenio.modules.formatter.config import CFG_BIBFORMAT_USE_OLD_BIBFORMAT
 from invenio.legacy.bibrank.downloads_grapher import create_download_history_graph_and_box
