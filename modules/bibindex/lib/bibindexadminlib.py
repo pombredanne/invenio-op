@@ -31,7 +31,7 @@ from invenio.bibrankadminlib import write_outcome, modify_translations, \
 from invenio.access_control_engine import acc_authorize_action
 from invenio.legacy.dbquery import run_sql, get_table_status_info, wash_table_column_name
 from invenio.bibindex_engine_stemmer import get_stemming_language_map
-import invenio.template
+import invenio.legacy.template
 from invenio.bibindex_engine_config import CFG_BIBINDEX_SYNONYM_MATCH_TYPE, \
                                            CFG_BIBINDEX_COLUMN_VALUE_SEPARATOR
 from invenio.bibknowledge_dblayer import get_all_kb_names
@@ -44,11 +44,10 @@ from invenio.bibindex_engine_utils import load_tokenizers, \
     get_all_index_names_and_column_values, \
     is_index_virtual
 
-
 _TOKENIZERS = load_tokenizers()
 
-
 websearch_templates = invenio.template.load('websearch')
+
 
 def getnavtrail(previous = ''):
     """Get the navtrail"""
