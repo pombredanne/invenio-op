@@ -48,6 +48,7 @@ from invenio.bibindexadminlib import get_idx_remove_html_markup, \
                                      get_idx_remove_stopwords
 from invenio.bibdocfile import BibRecDocs
 from invenio.search_engine import perform_request_search, \
+from invenio.legacy.search_engine import perform_request_search, \
      get_index_stemming_language, \
      get_synonym_terms, \
      search_pattern, \
