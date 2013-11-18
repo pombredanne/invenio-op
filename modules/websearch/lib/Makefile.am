@@ -25,7 +25,6 @@ pylib_DATA = \
 	search_engine_utils.py \
 	search_engine_query_parser.py \
 	search_engine_query_parser_unit_tests.py \
-	websearch_webcoll.py \
 	websearchadmin_regression_tests.py \
 	search_engine_summarizer_unit_tests.py \
 	websearch_external_collections_getter_unit_tests.py \
