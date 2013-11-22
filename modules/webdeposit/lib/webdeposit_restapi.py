@@ -29,7 +29,7 @@ from invenio.webdeposit_models import Deposition, DepositionType, \
     DepositionFile, InvalidDepositionType, DepositionDoesNotExists, \
     DraftDoesNotExists, FormDoesNotExists, DepositionNotDeletable, \
     DepositionDraftCacheManager, InvalidApiAction, FilenameAlreadyExists, \
-    FileDoesNotExists, ForbiddenAction
+    FileDoesNotExists, ForbiddenAction, DepositionError
 from invenio.webdeposit_storage import ChunkedDepositionStorage, \
     DepositionStorage, ExternalFile, UploadError
 from invenio.webinterface_handler_flask_utils import InvenioBlueprint
@@ -38,9 +38,19 @@ from invenio.webuser_flask import current_user
 
 from cerberus import Validator
 
+
+class APIValidator(Validator):
+    """
+    Adds new datatype 'raw', that accepts anything.
+    """
+    def _validate_type_any(self, field, value):
+        pass
+
+
 # Request parser
 list_parser = reqparse.RequestParser()
 list_parser.add_argument('state', type=str)
+list_parser.add_argument('submitted', type=bool)
 list_parser.add_argument('type', type=str)
 
 
@@ -78,8 +88,6 @@ def error_handler(f):
         except DraftDoesNotExists:
             abort(404, message="Draft does not exist", status=404)
         except InvalidApiAction:
-            abort(404, message="Action does not exists", status=404)
-        except InvalidApiAction:
             abort(404, message="Action does not exist", status=404)
         except DepositionNotDeletable:
             abort(403, message="Deposition is not deletable", status=403)
@@ -95,6 +103,11 @@ def error_handler(f):
             abort(400, message="Filename already exist", status=400)
         except UploadError:
             abort(400)
+        except DepositionError as e:
+            if len(e.args) >= 1:
+                abort(400, message=e.args[0], status=400)
+            else:
+                abort(500, message="Internal server error", status=500)
     return inner
 
 
@@ -165,13 +178,22 @@ class InputProcessorMixin(object):
     """
     input_schema = draft_data_extended_schema
 
-    def validate_input(self):
+    def validate_input(self, deposition, draft_id=None):
         """
         Validate input data for creating and update a deposition
         """
-        v = Validator()
+        v = APIValidator()
+        draft_id = draft_id or deposition.get_default_draft_id()
+        metadata_schema = deposition.type.api_metadata_schema(draft_id)
+
+        if metadata_schema:
+            schema = self.input_schema.copy()
+            schema['metadata'] = metadata_schema
+        else:
+            schema = self.input_schema
+
         # Either conform to dictionary schema or dictionary is empty
-        if not v.validate(request.json, self.input_schema) and \
+        if not v.validate(request.json, schema) and \
            request.json:
             abort(
                 400,
@@ -190,7 +212,10 @@ class InputProcessorMixin(object):
             if draft_id is None:
                 # Defaults to `_default' draft id unless specified
                 draft = deposition.get_or_create_draft(
-                    request.json.get('draft_id', '_default')
+                    request.json.get(
+                        'draft_id',
+                        deposition.get_default_draft_id()
+                    )
                 )
             else:
                 draft = deposition.get_draft(draft_id)
@@ -226,15 +251,12 @@ class DepositionListResource(Resource, InputProcessorMixin):
         """
         List depositions
 
-        :param state: One of `submitted' or `unsubmitted' (optional)
         :param type: Upload type identifier (optional)
         """
         args = list_parser.parse_args()
         result = Deposition.get_depositions(
             user=current_user, type=args['type'] or None
         )
-        if args['state'] in ['submitted', 'unsubmitted']:
-            result = filter(lambda x: x.state == args['state'], result)
         return map(lambda o: o.marshal(), result)
 
     @require_header('Content-Type', 'application/json')
@@ -242,10 +264,10 @@ class DepositionListResource(Resource, InputProcessorMixin):
         """
         Create a new deposition
         """
-        # Validate input data according to schema
-        self.validate_input()
         # Create deposition (uses default deposition type unless type is given)
         d = Deposition.create(current_user, request.json.get('type', None))
+        # Validate input data according to schema
+        self.validate_input(d)
         # Process input data
         self.process_input(d)
         # Save if all went fine
@@ -284,8 +306,8 @@ class DepositionResource(Resource, InputProcessorMixin):
     @require_header('Content-Type', 'application/json')
     def put(self, resource_id):
         """ Update a deposition """
-        self.validate_input()
         d = Deposition.get(resource_id, user=current_user)
+        self.validate_input(d)
         self.process_input(d)
         d.save()
         return d.marshal()
@@ -354,8 +376,8 @@ class DepositionDraftResource(Resource, InputProcessorMixin):
     @require_header('Content-Type', 'application/json')
     def put(self, resource_id, draft_id):
         """ Update a deposition draft """
-        self.validate_input()
         d = Deposition.get(resource_id, user=current_user)
+        self.validate_input(d, draft_id)
         self.process_input(d, draft_id)
         d.save()
 
@@ -454,7 +476,7 @@ class DepositionFileListResource(Resource):
                 )],
             )
 
-        v = Validator()
+        v = APIValidator()
         for file_item in request.json:
             if not v.validate(file_item, file_schema_list):
                 abort(
@@ -523,7 +545,7 @@ class DepositionFileResource(Resource):
     @require_header('Content-Type', 'application/json')
     def put(self, resource_id, file_id):
         """ Update a deposition file - i.e. rename it"""
-        v = Validator()
+        v = APIValidator()
         if not v.validate(request.json, file_schema):
             abort(
                 400,
@@ -594,7 +616,7 @@ def register_restapi(app, api):
     )
     api.add_resource(
         DepositionActionResource,
-        '/api/deposit/depositions/<string:resource_id>/action/<string:action_id>',
+        '/api/deposit/depositions/<string:resource_id>/actions/<string:action_id>',
     )
     api.add_resource(
         DepositionFileResource,

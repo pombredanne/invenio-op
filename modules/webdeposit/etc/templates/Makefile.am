@@ -19,6 +19,8 @@ templatesdir = $(sysconfdir)/templates
 templates_DATA = \
             webdeposit_completed.html \
             webdeposit_deposition_type.html \
+            webdeposit_edit.html \
+            webdeposit_edit_action_bar.html \
             webdeposit_error.html \
             webdeposit_index.html \
             webdeposit_myview.html \

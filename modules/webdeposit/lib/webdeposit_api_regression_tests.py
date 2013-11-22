@@ -22,6 +22,7 @@ from invenio.config import CFG_SITE_SECURE_URL
 from invenio.testutils import make_test_suite, run_test_suite, \
     InvenioTestCase, make_pdf_fixture
 import json
+from flask import url_for
 
 
 class WebDepositApiBaseTestCase(InvenioTestCase):
@@ -42,6 +43,8 @@ class WebDepositApiBaseTestCase(InvenioTestCase):
         keys = get_available_web_api_keys(self.userid)
         self.apikey = keys[0].id
 
+        self.maxDiff = None
+
     def get(self, *args, **kwargs):
         return self.make_request(self.client.get, *args, **kwargs)
 
@@ -55,7 +58,8 @@ class WebDepositApiBaseTestCase(InvenioTestCase):
         return self.make_request(self.client.delete, *args, **kwargs)
 
     def make_request(self, client_func, endpoint, urlargs={}, data=None,
-                     is_json=True, code=None, headers=None):
+                     is_json=True, code=None, headers=None,
+                     follow_redirects=False):
         from flask import url_for
 
         if headers is None:
@@ -76,6 +80,7 @@ class WebDepositApiBaseTestCase(InvenioTestCase):
                 **urlargs
             ),
             base_url=CFG_SITE_SECURE_URL,
+            follow_redirects=follow_redirects,
             **request_args
         )
         if code is not None:
@@ -422,6 +427,25 @@ class WebDepositApiTest(WebDepositApiBaseTestCase):
 
 
 class WebDepositZenodoApiTest(WebDepositApiBaseTestCase):
+    resource_schema = dict(
+        files=dict(type="list", required=True),
+        created=dict(type="string", required=True),
+        modified=dict(type="string", required=True),
+        state=dict(
+            type="string",
+            allowed=['done', 'error', 'inprogress', ],
+            required=True
+        ),
+        owner=dict(type="integer", required=True),
+        id=dict(type="integer", required=True),
+        title=dict(type="string", required=True),
+        metadata=dict(type="dict", required=True),
+        submitted=dict(type="boolean", required=True),
+        record_id=dict(type="integer"),
+        record_url=dict(type="string"),
+        doi=dict(type="string"),
+        doi_url=dict(type="string"),
+    )
     metadata_schema = dict(
         access_right=dict(
             type='string',
@@ -484,6 +508,8 @@ class WebDepositZenodoApiTest(WebDepositApiBaseTestCase):
         thesis_university=dict(type='string'),
         title=dict(type='string'),
         upload_type=dict(type='string'),
+        recid=dict(type='integer', nullable=True),
+        version_id=dict(type='string', nullable=True),
     )
 
     def get_test_data(self, **extra):
@@ -501,6 +527,54 @@ class WebDepositZenodoApiTest(WebDepositApiBaseTestCase):
         )
         test_data['metadata'].update(extra)
         return test_data
+
+    def run_task_id(self, task_id):
+        """ Run a bibsched task """
+        from invenio.bibsched_model import SchTASK
+        from invenio.config import CFG_BINDIR
+        import os
+
+        bibtask = SchTASK.query.filter(SchTASK.id == task_id).first()
+        assert bibtask is not None
+        assert bibtask.status == 'WAITING'
+
+        cmd = "%s/%s %s" % (CFG_BINDIR, bibtask.proc, task_id)
+        assert not os.system(cmd)
+
+    def run_tasks(self, alias=None):
+        """
+        Run all background tasks matching parameters
+        """
+        from invenio.bibsched_model import SchTASK
+
+        q = SchTASK.query
+        if alias:
+            q = q.filter(SchTASK.user == alias, SchTASK.status == 'WAITING')
+
+        for r in q.all():
+            self.run_task_id(r.id)
+
+    def run_deposition_tasks(self, deposition_id, with_webcoll=True):
+        # Run submitted tasks
+        from invenio.webdeposit_models import Deposition
+        dep = Deposition.get(deposition_id)
+        sip = dep.get_latest_sip(sealed=True)
+        for task_id in sip.task_ids:
+            self.run_task_id(task_id)
+
+        if with_webcoll:
+            # Run webcoll (to ensure record is assigned permissions)
+            from invenio.bibtask import task_low_level_submission
+            task_id = task_low_level_submission('webcoll', 'webdeposit', '-q')
+            self.run_task_id(task_id)
+
+            # Check if record is accessible
+            from flask import url_for
+            response = self.client.get(
+                url_for('record.metadata', recid=sip.metadata['recid']),
+                base_url=CFG_SITE_SECURE_URL,
+            )
+            self.assertStatus(response, 200)
 
     def assert_error(self, field, response):
         for e in response.json['errors']:
@@ -559,13 +633,99 @@ class WebDepositZenodoApiTest(WebDepositApiBaseTestCase):
             'depositionlistresource', data=test_data, code=201,
         )
         v = Validator()
-        if v.validate(response.json, self.metadata_schema):
+        if not v.validate(response.json, self.resource_schema):
+            print v.errors
+            raise AssertionError("Output does not validate according to schema")
+        if not v.validate(response.json['metadata'], self.metadata_schema):
+            print v.errors
+            print response.json['metadata']
             raise AssertionError("Output does not validate according to schema")
         response = self.delete(
             'depositionresource',
             urlargs=dict(resource_id=response.json['id']),
             code=204,
         )
+
+    def test_unicode(self):
+        test_data = dict(
+            metadata=dict(
+                access_right='embargoed',
+                communities=[{'identifier': 'cfa'}],
+                conference_acronym='Αυτή είναι μια δοκιμή',
+                conference_dates='هذا هو اختبار',
+                conference_place='Սա փորձություն',
+                conference_title='Гэта тэст',
+                conference_url='http://someurl.com',
+                creators=[
+                    dict(name="Doe, John", affiliation="Това е тест"),
+                    dict(name="Smith, Jane", affiliation="Tio ĉi estas testo")
+                ],
+                description="这是一个测试",
+                doi="10.1234/foo.bar",
+                embargo_date="2010-12-09",
+                grants=[dict(id="283595"), ],
+                imprint_isbn="Some isbn",
+                imprint_place="這是一個測試",
+                imprint_publisher="ეს არის გამოცდა",
+                journal_issue="આ એક કસોટી છે",
+                journal_pages="זהו מבחן",
+                journal_title="यह एक परीक्षण है",
+                journal_volume="Þetta er prófun",
+                keywords=["これはテストです", "ಇದು ಪರೀಕ್ಷೆ"],
+                license="cc-zero",
+                notes="이것은 테스트입니다",
+                partof_pages="ນີ້ແມ່ນການທົດສອບ",
+                partof_title="ही चाचणी आहे",
+                prereserve_doi=True,
+                publication_date="2013-09-12",
+                publication_type="book",
+                related_identifiers=[
+                    dict(identifier='10.1234/foo.bar2', relation='isCitedBy'),
+                    dict(identifier='10.1234/foo.bar3', relation='cites'),
+                ],
+                thesis_supervisors=[
+                    dict(name="Doe Sr., این یک تست است", affiliation="Atlantis"),
+                    dict(name="Это Sr., Jane", affiliation="Atlantis")
+                ],
+                thesis_university="இந்த ஒரு சோதனை",
+                title="Đây là một thử nghiệm",
+                upload_type="publication",
+            )
+        )
+
+        response = self.post(
+            'depositionlistresource', data=test_data, code=201,
+        )
+        res_id = response.json['id']
+        v = Validator()
+        if not v.validate(response.json, self.resource_schema):
+            print v.errors
+            raise AssertionError("Output does not validate according to schema")
+        if not v.validate(response.json['metadata'], self.metadata_schema):
+            print v.errors
+            raise AssertionError("Output does not validate according to schema")
+
+        # Upload 3 files
+        for i in range(3):
+            response = self.post(
+                'depositionfilelistresource',
+                urlargs=dict(resource_id=res_id),
+                is_json=False,
+                data={
+                    'file': make_pdf_fixture('test%s.pdf' % i),
+                    'name': 'test-%s.pdf' % i,
+                },
+                code=201,
+            )
+
+        # Publish deposition
+        response = self.post(
+            'depositionactionresource',
+            urlargs=dict(resource_id=res_id, action_id='publish'),
+            code=202
+        )
+
+        self.run_deposition_tasks(res_id)
 
     def test_malicious_data(self):
         test_data = dict(
@@ -764,7 +924,7 @@ class WebDepositZenodoApiTest(WebDepositApiBaseTestCase):
         self.assertTrue(response.json['modified'])
         self.assertEqual(response.json['files'], [])
         self.assertEqual(response.json['owner'], self.userid)
-        self.assertEqual(response.json['state'], 'unsubmitted')
+        self.assertEqual(response.json['state'], 'inprogress')
         post_data = response.json
 
         # Get deposition again and compare
@@ -823,7 +983,7 @@ class WebDepositZenodoApiTest(WebDepositApiBaseTestCase):
         )
         res_id = response.json['id']
 
-        # Upload file 3 files
+        # Upload 3 files
         for i in range(3):
             response = self.post(
                 'depositionfilelistresource',
@@ -846,7 +1006,7 @@ class WebDepositZenodoApiTest(WebDepositApiBaseTestCase):
         response = self.post(
             'depositionactionresource',
             urlargs=dict(resource_id=res_id, action_id='publish'),
-            code=403
+            code=400
         )
 
         # Not allowed to edit drafts
@@ -910,6 +1070,397 @@ class WebDepositZenodoApiTest(WebDepositApiBaseTestCase):
             urlargs=dict(resource_id=res_id, file_id=files_list[0]['id']),
             data=dict(filename="another_test.pdf"),
             code=403,
+        )
+
+        self.run_deposition_tasks(res_id)
+
+    def test_edit(self):
+        test_data = dict(
+            metadata=dict(
+                access_right='embargoed',
+                embargo_date="2010-12-09",
+                upload_type="publication",
+                title="Test title",
+                creators=[
+                    dict(name="Doe, John", affiliation="Atlantis"),
+                    dict(name="Smith, Jane", affiliation="Atlantis")
+                ],
+                description="<p>Test <em>Description</em></p>",
+                publication_date="2013-05-08",
+                communities=[{'identifier': 'cfa'}, ],
+                grants=[dict(id="283595"), ],
+                license="cc-zero",
+                conference_acronym='Some acronym',
+                conference_dates='Some dates',
+                conference_place='Some place',
+                conference_title='Some title',
+                conference_url='http://someurl.com',
+                imprint_isbn="Some isbn",
+                imprint_place="Some place",
+                imprint_publisher="Some publisher",
+                journal_issue="Some issue",
+                journal_pages="Some pages",
+                journal_title="Some journal name",
+                journal_volume="Some volume",
+                keywords=["Keyword 1", "keyword 2"],
+                notes="Some notes",
+                partof_pages="SOme part of",
+                partof_title="Some part of title",
+                publication_type="book",
+                related_identifiers=[
+                    dict(identifier='10.1234/foo.bar2', relation='isCitedBy'),
+                    dict(identifier='10.1234/foo.bar3', relation='cites'),
+                ],
+                thesis_supervisors=[
+                    dict(name="Doe Sr., John", affiliation="Atlantis"),
+                    dict(name="Smith Sr., Jane", affiliation="Atlantis")
+                ],
+                thesis_university="Some thesis_university",
+            )
+        )
+
+        # Create deposition
+        response = self.post(
+            'depositionlistresource', data=test_data, code=201
+        )
+        res_id = response.json['id']
+        initial_data = response.json['metadata']
+
+        # Upload a file
+        response = self.post(
+            'depositionfilelistresource',
+            urlargs=dict(resource_id=res_id),
+            is_json=False,
+            data={
+                'file': make_pdf_fixture('test.pdf'),
+                'name': 'test.pdf',
+            },
+            code=201,
+        )
+
+        # Edit deposition - not a valid action at this point.
+        response = self.post(
+            'depositionactionresource',
+            urlargs=dict(resource_id=res_id, action_id='edit'),
+            code=400
+        )
+
+        # Discard changes - not a valid action at this point.
+        response = self.post(
+            'depositionactionresource',
+            urlargs=dict(resource_id=res_id, action_id='discard'),
+            code=400
+        )
+
+        # Publish deposition
+        response = self.post(
+            'depositionactionresource',
+            urlargs=dict(resource_id=res_id, action_id='publish'),
+            code=202
+        )
+
+        record_id = response.json['record_id']
+
+        # Edit deposition - not possible yet (until fully integrated)
+        response = self.post(
+            'depositionactionresource',
+            urlargs=dict(resource_id=res_id, action_id='edit'),
+            code=409
+        )
+
+        # Edit deposition - check for consistency in result being returned
+        response = self.post(
+            'depositionactionresource',
+            urlargs=dict(resource_id=res_id, action_id='edit'),
+            code=409
+        )
+
+        # Integrate record.
+        self.run_deposition_tasks(res_id, with_webcoll=True)
+
+        # Edit deposition
+        response = self.post(
+            'depositionactionresource',
+            urlargs=dict(resource_id=res_id, action_id='edit'),
+            code=201
+        )
+
+        # Edit deposition - second request should return bad request (state of
+        # of resource changed).
+        response = self.post(
+            'depositionactionresource',
+            urlargs=dict(resource_id=res_id, action_id='edit'),
+            code=400
+        )
+
+        # Validate loaded metadata
+        response = self.get(
+            'depositionresource',
+            urlargs=dict(resource_id=res_id),
+            code=200
+        )
+        edit_data = response.json['metadata']
+        self.assertTrue(edit_data['doi'])
+        # Remove differences between edit metadata and new metadata
+        del initial_data['prereserve_doi']
+        del initial_data['doi']
+        del edit_data['doi']
+        self.assertEqual(edit_data, initial_data)
+
+        # Not allowed to delete
+        response = self.delete(
+            'depositionresource',
+            urlargs=dict(resource_id=res_id),
+            code=403,
+        )
+
+        # Update deposition
+        response = self.put(
+            'depositionresource',
+            urlargs=dict(resource_id=res_id),
+            data=dict(metadata=dict(
+                title="My new title",
+                creators=[
+                    dict(name="Smith, Jane", affiliation="Atlantis"),
+                    dict(name="Doe, John", affiliation="Atlantis"),
+                ],
+                access_right="closed",
+                thesis_supervisors=[
+                    dict(name="Doe Jr., John", affiliation="Atlantis"),
+                    dict(name="Smith Sr., Jane", affiliation="CERN"),
+                    dict(name="Doe Sr., John", affiliation="CERN"),
+                ],
+            )),
+            code=200,
+        )
+        self.assertEqual(response.json['metadata']['title'], "My new title")
+
+        # Update deposition - cannot change doi
+        response = self.put(
+            'depositionresource',
+            urlargs=dict(resource_id=res_id),
+            data=dict(metadata=dict(
+                doi="10.5072/zenodo.1234",
+            )),
+            code=400,
+        )
+
+        # Update deposition - cannot edit recid and version_id (hidden)
+        response = self.put(
+            'depositionresource',
+            urlargs=dict(resource_id=res_id),
+            data=dict(metadata=dict(
+                version_id="2013-11-27 07:46:14",
+                recid=10,
+            )),
+            code=400,
+        )
+        self.assertEqual(len(response.json['errors']), 2)
+
+        # Get deposition metadata
+        response = self.get(
+            'depositionresource',
+            urlargs=dict(resource_id=res_id),
+            code=200,
+        )
+        self.assertNotEqual(
+            response.json['metadata']['doi'],
+            "10.5072/zenodo.1234"
+        )
+
+        # File restrictions
+        # - check file availability before changing to closed access
+        # - i.e. file is accessible to public
+        response = self.client.get(
+            url_for('record.files', recid=record_id) + "/test.pdf"
+        )
+        self.assertStatus(response, 200)
+
+        #
+        # Approve record in community - to test record merging
+        #
+        from invenio.usercollection_model import UserCollection
+        u = UserCollection.query.filter_by(id='zenodo').first()
+        u.accept_record(record_id)
+        self.run_tasks(alias='usercoll')
+
+        # Publish edited deposition
+        response = self.post(
+            'depositionactionresource',
+            urlargs=dict(resource_id=res_id, action_id='publish'),
+            code=202
+        )
+
+        # Edit deposition - not possible yet (until fully integrated)
+        response = self.post(
+            'depositionactionresource',
+            urlargs=dict(resource_id=res_id, action_id='edit'),
+            code=409
+        )
+
+        # Integrate record
+        self.run_deposition_tasks(res_id, with_webcoll=True)
+
+        # Check record
+        from invenio.bibfield import get_record
+        record = get_record(record_id, reset_cache=True)
+        self.assertEqual(record['title'], "My new title")
+        self.assertEqual(record['access_right'], "closed")
+        self.assertEqual(record['authors'], [
+            dict(name="Smith, Jane", affiliation="Atlantis"),
+            dict(name="Doe, John", affiliation="Atlantis"),
+        ])
+        self.assertEqual(record['thesis_supervisors'], [
+            dict(name="Doe Jr., John", affiliation="Atlantis"),
+            dict(name="Smith Sr., Jane", affiliation="CERN"),
+            dict(name="Doe Sr., John", affiliation="CERN"),
+        ])
+        self.assertEqual(record.get('embargo_date'), None)
+        self.assertEqual(record.get('license'), None)
+        self.assertEqual(record['owner']['deposition_id'], str(res_id))
+        self.assertEqual(record.get('url'), None)
+
+        # Communities
+        self.assertEqual(record.get('communities'), ['zenodo'])
+        self.assertEqual(
+            record.get('provisional_communities'),
+            ['cfa', 'ecfunded']
+        )
+
+        # File restrictions
+        # - check file availability after changing to closed access
+        # - file is not publicly accessible.
+        response = self.client.get(
+            url_for('record.files', recid=record_id) + "/test.pdf"
+        )
+        self.assertStatus(response, 401)
+
+        # Edit deposition - now possible again
+        response = self.post(
+            'depositionactionresource',
+            urlargs=dict(resource_id=res_id, action_id='edit'),
+            code=201
+        )
+
+        # Update deposition
+        response = self.put(
+            'depositionresource',
+            urlargs=dict(resource_id=res_id),
+            data=dict(metadata=dict(
+                title="To be discarded",
+            )),
+            code=200,
+        )
+
+        # Get deposition metadata
+        response = self.get(
+            'depositionresource',
+            urlargs=dict(resource_id=res_id),
+            code=200,
+        )
+        self.assertEqual(
+            response.json['metadata']['title'],
+            "To be discarded"
+        )
+
+        # Discard changes.
+        response = self.post(
+            'depositionactionresource',
+            urlargs=dict(resource_id=res_id, action_id='discard'),
+            code=201
+        )
+
+        # Discard changes - state of resource changed (no longer a valid
+        # action)
+        response = self.post(
+            'depositionactionresource',
+            urlargs=dict(resource_id=res_id, action_id='discard'),
+            code=400
+        )
+
+        # Get deposition metadata
+        response = self.get(
+            'depositionresource',
+            urlargs=dict(resource_id=res_id),
+            code=200,
+        )
+        self.assertEqual(
+            response.json['metadata']['title'],
+            "My new title"
+        )
+
+    def _create_and_upload(self):
+        test_data = dict(
+            metadata=dict(
+                access_right='open',
+                upload_type="dataset",
+                title="Test empty edit",
+                creators=[
+                    dict(name="Doe, John", affiliation="Atlantis"),
+                    dict(name="Smith, Jane", affiliation="Atlantis")
+                ],
+                description="<p>Test <em>Description</em></p>",
+                license="cc-zero",
+            )
+        )
+
+        # Create deposition
+        response = self.post(
+            'depositionlistresource', data=test_data, code=201
+        )
+        res_id = response.json['id']
+        initial_data = response.json['metadata']
+
+        # Upload a file
+        response = self.post(
+            'depositionfilelistresource',
+            urlargs=dict(resource_id=res_id),
+            is_json=False,
+            data={
+                'file': make_pdf_fixture('test.pdf'),
+                'name': 'test.pdf',
+            },
+            code=201,
+        )
+
+        # Publish deposition
+        response = self.post(
+            'depositionactionresource',
+            urlargs=dict(resource_id=res_id, action_id='publish'),
+            code=202
+        )
+        self.run_deposition_tasks(res_id, with_webcoll=False)
+
+        return res_id
+
+    def test_empty_edit(self):
+        """
+        Test case when uploaded record has no changes, causing version id of
+        the record to be unmodified, which can cause the upload not to be
+        present.
+        """
+        res_id = self._create_and_upload()
+
+        # Edit deposition
+        response = self.post(
+            'depositionactionresource',
+            urlargs=dict(resource_id=res_id, action_id='edit'),
+            code=201
+        )
+
+        # Publish edited deposition (no modifications made)
+        response = self.post(
+            'depositionactionresource',
+            urlargs=dict(resource_id=res_id, action_id='publish'),
+            code=202
+        )
+        self.run_deposition_tasks(res_id, with_webcoll=False)
+
+        # Edit deposition - should be possible.
+        response = self.post(
+            'depositionactionresource',
+            urlargs=dict(resource_id=res_id, action_id='edit'),
+            code=201
         )
 
 

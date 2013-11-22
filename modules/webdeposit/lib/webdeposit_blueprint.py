@@ -44,7 +44,7 @@ from invenio.webdeposit_signals import template_context_created
 from invenio.webdeposit_models import Deposition, DepositionType, \
     DepositionFile, InvalidDepositionType, DepositionDoesNotExists, \
     DraftDoesNotExists, FormDoesNotExists, DepositionNotDeletable, \
-    DepositionDraftCacheManager, FilenameAlreadyExists
+    DepositionDraftCacheManager, FilenameAlreadyExists, ForbiddenAction
 from invenio.webdeposit_storage import ChunkedDepositionStorage, \
     DepositionStorage, ExternalFile, UploadError
 
@@ -93,6 +93,9 @@ def deposition_error_handler(endpoint='.index'):
                 abort(400)
             except (FilenameAlreadyExists,):
                 abort(400)
+            except (ForbiddenAction,):
+                flash(_("Not allowed."), 'error')
+                return redirect(url_for(endpoint))
             except (UploadError,):
                 abort(400)
 
@@ -314,18 +317,53 @@ def run(deposition_type=None, uuid=None):
     )
     current_app.config['breadcrumbs_map'][request.endpoint] = breadcrumb
 
-    # If normal form handling should be supported, it can be handled here with
-    # something like::
-    #
-    # if request.method == 'POST':
-    #     # draft_id should be sent from the form.
-    #     draft = deposition.get_draft(draft_id)
-    #     dummy_form, validated, dummy_results = draft.process(request.form)
-    #     if validated:
-    #         draft.complete()
-    #     deposition.save()
-
     return deposition.run_workflow()
+
+
+@blueprint.route('/%s/<uuid>/edit/' % deptypes, methods=['GET', 'POST'])
+@blueprint.route('/<uuid>/edit/', methods=['GET', 'POST'])
+@blueprint.invenio_authenticated
+@deposition_error_handler()
+def edit(deposition_type=None, uuid=None):
+    """
+    Reinitialize a completed workflow (i.e. prepare it for editing)
+    """
+    deposition = Deposition.get(uuid, current_user, type=deposition_type)
+    deposition.reinitialize_workflow()
+    deposition.save()
+
+    return redirect(url_for(
+        ".run",
+        deposition_type=(
+            None if deposition.type.is_default()
+            else deposition.type.get_identifier()
+        ),
+        uuid=deposition.id
+    ))
+
+
+@blueprint.route('/%s/<uuid>/discard/' % deptypes, methods=['GET', 'POST'])
+@blueprint.route('/<uuid>/discard/', methods=['GET', 'POST'])
+@blueprint.invenio_authenticated
+@deposition_error_handler()
+def discard(deposition_type=None, uuid=None):
+    """
+    Stop an inprogress workflow (i.e. discard editing changes)
+
+    Only possible, if workflow already has a sip.
+    """
+    deposition = Deposition.get(uuid, current_user, type=deposition_type)
+    deposition.stop_workflow()
+    deposition.save()
+
+    return redirect(url_for(
+        ".run",
+        deposition_type=(
+            None if deposition.type.is_default()
+            else deposition.type.get_identifier()
+        ),
+        uuid=deposition.id
+    ))
 
 
 @blueprint.route('/%s/<uuid>/<draft_id>/status/' % deptypes,
@@ -460,21 +498,25 @@ def get_file(deposition_type=None, uuid=None):
         return redirect(df.get_url())
 
 
-@blueprint.route('/autocomplete/<form_type>/<field_name>',
+@blueprint.route('/%s/<uuid>/<draft_id>/<field_name>/' % deptypes,
                  methods=['GET', 'POST'])
+@blueprint.route('/<uuid>/<draft_id>/<field_name>/', methods=['GET', 'POST'])
 @blueprint.invenio_authenticated
-def autocomplete(form_type, field_name):
+def autocomplete(deposition_type=None, uuid=None, draft_id=None,
+                 field_name=None):
     """
     Auto-complete a form field
     """
     term = request.args.get('term')  # value
     limit = request.args.get('limit', 50, type=int)
 
-    try:
-        form = forms[form_type]()
+    deposition = Deposition.get(uuid, current_user, type=deposition_type)
+    formclass = deposition.type.draft_definitions.get(draft_id)
+    if formclass:
+        form = formclass()
         result = form.autocomplete(field_name, term, limit=limit)
         result = result if result is not None else []
-    except KeyError:
+    else:
         result = []
 
     # jsonify doesn't return lists as top-level items.

@@ -74,7 +74,9 @@ function serialize_form(selector){
         $('#'+instance).val(editor.getData());
     }
     fields = $(selector).serializeArray();
-    fields.push({name: 'files', value: serialize_files('#filelist')});
+    if(uploader !== null){
+        fields.push({name: 'files', value: serialize_files('#filelist')});
+    }
     return serialize_object(fields);
 }
 
@@ -417,6 +419,11 @@ function webdeposit_check_status(url){
  * Initialize PLUpload
  */
 function webdeposit_init_plupload(max_size, selector, save_url, url, delete_url, get_file_url, db_files, dropbox_url, uuid, newdep_url, continue_url) {
+    if($(selector).length === 0){
+        uploader = null;
+        return;
+    }
+
     var had_error = false;
     uploader = new plupload.Uploader({
         // General settings
@@ -640,7 +647,7 @@ function webdeposit_init_plupload(max_size, selector, save_url, url, delete_url,
     uploader.bind('FilesAdded', function(up, files) {
         var remove_files = [];
         $.each(up.files, function(i, file) {
-            
+
         });
 
         $(selector).show();
@@ -670,14 +677,14 @@ function webdeposit_init_plupload(max_size, selector, save_url, url, delete_url,
                 $('#filelist #' + file.id).show('fast');
                 $('#' + file.id + ' .rmlink').on("click", function(event){
                     uploader.removeFile(file);
-                });    
+                });
             }
         });
         if(filename_already_exists.length > 0) {
             $('#upload-errors').hide();
             $('#upload-errors').append('<div class="alert alert-warning"><a class="close" data-dismiss="alert" href="#">&times;</a><strong>Warning:</strong>' + filename_already_exists.join(", ") + " already exist.</div>");
-            $('#upload-errors').show('fast');    
-        }        
+            $('#upload-errors').show('fast');
+        }
     });
 
     uploader.bind('FileUploaded', function(up, file, responseObj) {

@@ -22,7 +22,7 @@ import warnings
 from pprint import pformat
 from invenio.config import CFG_PYLIBDIR, CFG_LOGDIR
 from invenio.pluginutils import PluginContainer
-
+from invenio.webdeposit_models import Registry
 
 def plugin_builder(plugin_name, plugin_code):
     if plugin_name == '__init__':
@@ -73,26 +73,12 @@ class MyDeposition(DepositionType):
     enabled = True
 """
 
-deposition_types = {}
-deposition_default = None
-
-
 for deposition_type in loaded_deposition_types.values():
-    if deposition_type and deposition_type.is_enabled():
-        deposition_types[deposition_type.__name__] = deposition_type
-        if deposition_type.is_default():
-            if deposition_default is not None:
-                warnings.warn(
-                    "%s is overwriting already set default deposition %s." % (
-                        deposition_type.__name__,
-                        deposition_default.__name__
-                    ),
-                    RuntimeWarning
-                )
-            deposition_default = deposition_type
+    Registry.register(deposition_type, default=deposition_type.is_default())
+
 
 ## Let's report about broken plugins
 open(os.path.join(CFG_LOGDIR, 'broken-depositions.log'), 'w').write(
     pformat(loaded_deposition_types.get_broken_plugins()))
 
-__all__ = ['deposition_types', 'deposition_default']
+__all__ = []

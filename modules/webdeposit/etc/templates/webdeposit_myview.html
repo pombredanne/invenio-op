@@ -3,7 +3,7 @@
     {% if not my_depositions %}
     <p class="muted">You currently have no uploads.</p>
     {% else %}
-    {% for dep in my_depositions if not dep.is_finished() %}
+    {% for dep in my_depositions if not dep.has_sip() %}
     {%- set deposition_type = None if dep.type.is_default() else dep.type.get_identifier() -%}
     {%- if loop.first %}
     <h4>Unsubmitted</h4>
@@ -23,7 +23,7 @@
 
     {% endfor %}
 
-    {% for dep in my_depositions if dep.is_finished() %}
+    {% for dep in my_depositions if dep.has_sip() %}
     {%- set deposition_type = None if dep.type.is_default() else dep.type.get_identifier() -%}
     {%- if loop.first %}
     <h4>Submitted</h4>

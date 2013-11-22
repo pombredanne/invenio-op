@@ -21,14 +21,20 @@
 
 """
 
+from __future__ import print_function
+
 import os
 from tempfile import mkstemp
+from functools import partial
 
 from flask import current_app, abort, request
+
+import dictdiffer
 
 from invenio.bibtask import task_low_level_submission, \
     bibtask_allocate_sequenceid
 from invenio.bibfield_jsonreader import JsonReader
+from invenio.bibfield import get_record
 from invenio.config import CFG_TMPSHAREDDIR
 from invenio.dbquery import run_sql
 from invenio.webdeposit_models import Deposition, Agent, \
@@ -36,6 +42,10 @@ from invenio.webdeposit_models import Deposition, Agent, \
 from invenio.webuser_flask import current_user
 from invenio.errorlib import register_exception
 from invenio.restapi import error_codes
+from invenio.bibformat import format_record
+from webdeposit_recordhelpers import record_to_draft, make_record, \
+    deposition_record
+from invenio.bibdocfile import BibRecDocs
 
 try:
     from invenio.pidstore_model import PersistentIdentifier
@@ -49,12 +59,19 @@ def is_api_request(obj, eng):
     return getattr(request, 'is_api_request', False)
 
 
+def has_submission(obj, eng):
+    """
+    """
+    d = Deposition(obj)
+    return d.has_sip()
+
+
 def authorize_user(action, **params):
     """
     Check if current user is authorized to perform the action.
     """
     def _authorize_user(obj, dummy_eng):
-        from invenio.access_control_engine import acc_authorize_action
+        from invenio.access_control import acc_authorize_action
 
         auth, message = acc_authorize_action(
             current_user.get_id(),
@@ -106,9 +123,12 @@ def render_form(draft_id='_default'):
                         )
 
                 d.set_render_context(dict(
-                    message="Bad request",
+                    response=dict(
+                        message="Bad request",
+                        status=400,
+                        errors=error_messages,
+                    ),
                     status=400,
-                    errors=error_messages,
                 ))
                 eng.halt("API: Draft did not validate")
         else:
@@ -137,13 +157,146 @@ def render_form(draft_id='_default'):
     return _render_form
 
 
+def load_record(draft_id='_default', producer='json_for_form',
+                post_process=None):
+    """
+    Load a record and map to draft data.
+    """
+    def _load_record(obj, eng):
+        d = Deposition(obj)
+
+        # Get record
+        sip = d.get_latest_sip(sealed=True)
+        record = get_record(sip.metadata.get('recid'), reset_cache=True)
+
+        sip_version_id = sip.metadata.get('version_id')
+        record_version_id = record.get('version_id')
+
+        # Check of record in latest SIP has been uploaded (record version must
+        # be newer than SIP record version.
+        if record_version_id is None or (sip_version_id and
+                                         sip_version_id >= record_version_id):
+            if getattr(request, 'is_api_request', False):
+                d.set_render_context(dict(
+                    response=dict(
+                        message="Conflict",
+                        status=409,
+                        errors="Upload not yet fully integrated. Please wait"
+                               " a few moments.",
+                    ),
+                    status=409,
+                ))
+            else:
+                from flask import flash
+                flash(
+                    "Editing is only possible after your upload have been"
+                    " fully integrated. Please wait a few moments, then try"
+                    " to reload the page.",
+                    category='warning'
+                )
+                d.set_render_context(dict(
+                    template_name_or_list="webdeposit_completed.html",
+                    deposition=d,
+                    deposition_type=(
+                        None if d.type.is_default() else
+                        d.type.get_identifier()
+                    ),
+                    uuid=d.id,
+                    sip=sip,
+                    my_depositions=Deposition.get_depositions(
+                        current_user, type=d.type
+                    ),
+                    format_record=format_record,
+                ))
+            d.update()
+            eng.halt("Wait for record to be uploaded")
+
+        # Check if record is already loaded, if so, skip.
+        if d.drafts:
+            eng.jumpCallForward(1)
+
+        # Load draft
+        draft = d.get_or_create_draft(draft_id)
+
+        # Fill draft with values from recjson
+        record_to_draft(
+            record, draft=draft, post_process=post_process, producer=producer
+        )
+
+        # Store initial deposition_recjson
+        #draft.values['_initial'] = drafts_to_record([draft])
+
+        d.update()
+
+        # Stop API request
+        if getattr(request, 'is_api_request', False):
+            d.set_render_context(dict(
+                response=d.marshal(),
+                status=201,
+            ))
+            eng.halt("API request")
+    return _load_record
+
+
+def merge_record(draft_id='_default', process_load=None, process_export=None):
+    """
+    Merge recjson with a record
+
+    This task will load the current record, diff the changes from the
+    deposition against it, and apply the patch.
+    """
+    def _merge_record(obj, eng):
+        d = Deposition(obj)
+        sip = d.get_latest_sip(sealed=False)
+
+        current_record = get_record(
+            sip.metadata.get('recid'), reset_cache=True
+        )
+
+        # Diff current record  with changes from editing deposition (note,
+        # only fields which actually concerns the deposition is diff'ed).
+        form_class = d.get_draft(draft_id).form_class
+
+        initial_record = deposition_record(
+            current_record,
+            [form_class],
+            process_load=process_load,
+            process_export=partial(process_export, d),
+        )
+        changed_record = make_record(sip.metadata)
+
+        # Generate patch
+        patch = dictdiffer.diff(
+            initial_record.rec_json,
+            changed_record.rec_json,
+        )
+
+        # Initial patch of current record.
+        for k in initial_record:
+            if k not in current_record.rec_json:
+                current_record.rec_json[k] = initial_record[k]
+
+        # Apply patch
+        sip.metadata = dictdiffer.patch(
+            patch,
+            current_record.rec_json
+        )
+
+        # Ensure we are based on latest version_id to prevent being rejected in
+        # the bibupload queue.
+        sip.metadata['version_id'] = current_record['version_id']
+
+        d.update()
+    return _merge_record
+
+
 def create_recid():
     """
     Create a new record id.
     """
     def _create_recid(obj, dummy_eng):
         d = Deposition(obj)
-        sip = d.get_latest_sip(include_sealed=False)
+        sip = d.get_latest_sip(sealed=False)
         if sip is None:
             raise Exception("No submission information package found.")
 
@@ -177,7 +330,7 @@ def mint_pid(pid_field='doi', pid_creator=None, pid_store_type='doi',
 
     def _mint_pid(obj, dummy_eng):
         d = Deposition(obj)
-        recjson = d.get_latest_sip(include_sealed=False).metadata
+        recjson = d.get_latest_sip(sealed=False).metadata
 
         if 'recid' not in recjson:
             raise Exception("'recid' not found in sip metadata.")
@@ -210,6 +363,22 @@ def mint_pid(pid_field='doi', pid_creator=None, pid_store_type='doi',
     return _mint_pid
 
 
+def process_bibdocfile(process=None):
+    """
+    Process bibdocfiles with custom processor
+    """
+    def _bibdocfile_update(obj, eng):
+        if process:
+            d = Deposition(obj)
+            sip = d.get_latest_sip(sealed=False)
+            recid = sip.metadata.get('recid')
+            if recid:
+                brd = BibRecDocs(int(recid))
+                process(d, brd)
+                d.update()
+    return _bibdocfile_update
+
+
 def prepare_sip():
     """
     Prepare a submission information package
@@ -217,7 +386,7 @@ def prepare_sip():
     def _prepare_sip(obj, dummy_eng):
         d = Deposition(obj)
 
-        sip = d.get_latest_sip(include_sealed=False)
+        sip = d.get_latest_sip(sealed=False)
         if sip is None:
             sip = d.create_sip()
 
@@ -229,13 +398,26 @@ def prepare_sip():
     return _prepare_sip
 
 
+def process_sip_metadata(processor):
+    """
+    Process metadata in submission information package using a custom
+    processor.
+    """
+    def _prepare_sip(obj, dummy_eng):
+        d = Deposition(obj)
+        metadata = d.get_latest_sip(sealed=False).metadata
+        processor(d, metadata)
+        d.update()
+    return _prepare_sip
+
+
 def finalize_record_sip():
     """
     Finalizes the SIP by generating the MARC and storing it in the SIP.
     """
     def _finalize_sip(obj, dummy_eng):
         d = Deposition(obj)
-        sip = d.get_latest_sip(include_sealed=False)
+        sip = d.get_latest_sip(sealed=False)
 
         jsonreader = JsonReader()
         for k, v in sip.metadata.items():
@@ -257,7 +439,7 @@ def upload_record_sip():
     def create(obj, dummy_eng):
         d = Deposition(obj)
 
-        sip = d.get_latest_sip(include_sealed=False)
+        sip = d.get_latest_sip(sealed=False)
         sip.seal()
 
         tmp_file_fd, tmp_file_path = mkstemp(
@@ -272,11 +454,13 @@ def upload_record_sip():
         # Trick to have access to task_sequence_id in subsequent tasks.
         d.workflow_object.task_sequence_id = bibtask_allocate_sequenceid()
 
-        task_low_level_submission(
+        task_id = task_low_level_submission(
             'bibupload', 'webdeposit',
             '-r' if 'recid' in sip.metadata else '-i', tmp_file_path, '-P5',
             '-I', str(d.workflow_object.task_sequence_id)
         )
+
+        sip.task_ids.append(task_id)
 
         d.update()
     return create
