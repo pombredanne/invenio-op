@@ -75,7 +75,7 @@ class TestIntSequenceGeneratorClass(InvenioTestCase):
 class TestCnumSequenceGeneratorClass(InvenioTestCase):
 
     if HAS_MOCK:
-        @patch('invenio.bibedit_utils.get_bibrecord',
+        @patch('invenio.legacy.bibedit.utils.get_bibrecord',
             get_bibrecord_mock)
         def test_get_next_cnum(self):
             from invenio.sequtils_cnum import CnumSeq
