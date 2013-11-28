@@ -33,7 +33,6 @@ SUBDIRS = bibauthorid \
           bibmatch \
           bibmerge \
           bibrank \
-          bibrecord \
           bibsched \
           bibsort \
           bibsword \
