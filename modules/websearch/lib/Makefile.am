@@ -19,13 +19,10 @@ pylibdir = $(libdir)/python/invenio
 
 pylib_DATA = \
 	websearch_flask_tests.py \
-	websearch_regression_tests.py \
-	websearch_web_tests.py \
 	search_engine_unit_tests.py \
 	search_engine_utils.py \
 	search_engine_query_parser.py \
 	search_engine_query_parser_unit_tests.py \
-	websearchadmin_regression_tests.py \
 	search_engine_summarizer_unit_tests.py \
 	websearch_external_collections_getter_unit_tests.py \
 	websearch_external_collections_unit_tests.py
