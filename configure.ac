@@ -801,8 +801,6 @@ AC_CONFIG_FILES([config.nice  \
      modules/docextract/etc/Makefile \
      modules/docextract/doc/admin/Makefile \
      modules/docextract/doc/hacking/Makefile \
-     modules/webdeposit/Makefile \
-     modules/webdeposit/lib/Makefile \
      ])
 
 ## Finally, write output files:
