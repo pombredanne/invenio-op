@@ -18,8 +18,7 @@
 SUBDIRS = tokenizers
 
 pylibdir = $(libdir)/python/invenio
-pylib_DATA = bibindex_engine_unit_tests.py \
-             bibindex_engine_stemmer_unit_tests.py bibindex_engine_tokenizer_unit_tests.py
+pylib_DATA =
 
 EXTRA_DIST = $(pylib_DATA)
 
