@@ -17,19 +17,12 @@
 ## along with Invenio; if not, write to the Free Software Foundation, Inc.,
 ## 59 Temple Place, Suite 330, Boston, MA 02111-1307, USA.
 
-"""
-    invenio.core.record.backends.sqlalchemy
-    ---------------------------------------
+import six
 
-"""
-from itertools import izip, imap
-
-from flask import current_app
 from flask.helpers import locked_cached_property
 from werkzeug import import_string
 
-from invenio.utils.jsonalchemy.storage import Storage
-
+from invenio.modules.jsonalchemy.storage import Storage
 
 class SQLAlchemyStorage(Storage):
     """
@@ -39,48 +32,47 @@ class SQLAlchemyStorage(Storage):
 
     def __init__(self, model, **kwards):
         """
-        TBC
-        See also :meth:`~invenio.utils.jsonalchemy.storage:Storage.__init__`
+        See also :meth:`~invenio.modules.jsonalchemy.storage:Storage.__init__`
         """
         self.__db = kwards.get('sqlalchemy_backend', 'invenio.ext.sqlalchemy:db')
         self.__model = model
-        if not self.db.engine.dialect.has_table(self.db.engine,
-                self.model.__tablename__):
-            self.model.__table__.create(bind=self.db.engine)
-            self.db.session.commit()
 
     @locked_cached_property
     def db(self):
         """Returns SQLAlchemy database object."""
-        if isinstance(self.__db, basestring):
-            return import_string(self.__db)
+        if isinstance(self.__db, six.string_types):
+            self.__db = import_string(self.__db)
+        if not self.__db.engine.dialect.has_table(self.__db.engine,
+                self.model.__tablename__):
+            self.model.__table__.create(bind=self.__db.engine)
+            self.__db.session.commit()
         return self.__db
 
     @locked_cached_property
     def model(self):
         """Returns SQLAchemy model."""
-        if isinstance(self.__model, basestring):
+        if isinstance(self.__model, six.string_types):
             return import_string(self.__model)
         return self.__model
 
     def save_one(self, json, id=None):
-        """See :meth:`~invenio.utils.jsonalchemy.storage:Storage.save_one`"""
+        """See :meth:`~invenio.modules.jsonalchemy.storage:Storage.save_one`"""
         if id is None:
-            id = json_record['_id']
+            id = json['_id']
 
         self.db.session.add(self.model(id=id, json=json))
         self.db.session.commit()
 
     def save_many(self, jsons, ids=None):
-        """See :meth:`~invenio.utils.jsonalchemy.storage:Storage.save_many`"""
+        """See :meth:`~invenio.modules.jsonalchemy.storage:Storage.save_many`"""
         if ids is None:
-            ids = imap(lambda j: j['_id'], jsons)
+            ids = map(lambda j: j['_id'], jsons)
         self.db.session.add_all([self.model(id=id, json=json)
-            for id, json in izip(ids, jsons)])
+            for id, json in zip(ids, jsons)])
         self.db.session.commit()
 
     def update_one(self, json, id=None):
-        """See :meth:`~invenio.utils.jsonalchemy.storage:Storage.update_one`"""
+        """See :meth:`~invenio.modules.jsonalchemy.storage:Storage.update_one`"""
         #FIXME: what if we get only the fields that have change
         if id is None:
             id = json['id']
@@ -89,22 +81,22 @@ class SQLAlchemyStorage(Storage):
         self.db.session.commit()
 
     def update_many(self, jsons, ids=None):
-        """See :meth:`~invenio.utils.jsonalchemy.storage:Storage.update_many`"""
+        """See :meth:`~invenio.modules.jsonalchemy.storage:Storage.update_many`"""
         #FIXME: what if we get only the fields that have change
         if ids is None:
-            ids = imap(lambda j: j['_id'], jsons)
+            ids = map(lambda j: j['_id'], jsons)
 
-        for id, json in izip(ids, jsons):
+        for id, json in zip(ids, jsons):
             self.db.session.merge(self.model(id=id, json=json))
         self.db.session.commit()
 
     def get_one(self, id):
-        """See :meth:`~invenio.utils.jsonalchemy.storage:Storage.get_one`"""
+        """See :meth:`~invenio.modules.jsonalchemy.storage:Storage.get_one`"""
         return self.db.session.query(self.model.json)\
                 .filter_by(id=id).one().json
 
     def get_many(self, ids):
-        """See :meth:`~invenio.utils.jsonalchemy.storage:Storage.get_many`"""
+        """See :meth:`~invenio.modules.jsonalchemy.storage:Storage.get_many`"""
         for json in self.db.session.query(self.model.json)\
                 .filter(RecordMetadata.id.in_(ids))\
                 .all():
@@ -112,12 +104,12 @@ class SQLAlchemyStorage(Storage):
 
     def get_field_values(recids, field, repetitive_values=True, count=False,
             include_recid=False, split_by=0):
-        """See :meth:`~invenio.utils.jsonalchemy.storage:Storage.get_field_values`"""
+        """See :meth:`~invenio.modules.jsonalchemy.storage:Storage.get_field_values`"""
         #TODO
         raise NotImplementedError()
 
     def get_fields_values(recids, fields, repetitive_values=True, count=False,
             include_recid=False, split_by=0):
-        """See :meth:`~invenio.utils.jsonalchemy.storage:Storage.get_fields_values`"""
+        """See :meth:`~invenio.modules.jsonalchemy.storage:Storage.get_fields_values`"""
         #TODO
         raise NotImplementedError()

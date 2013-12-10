@@ -35,7 +35,7 @@ def produce(self, fields=None):
         if field.startswith('__'):
             continue
         try:
-            dc_rules = get_producer_rules(field, 'xd')
+            dc_rules = get_producer_rules(field, 'json_for_dc')
             for rule in dc_rules:
                 field = self.get(rule[0], None)
                 if field is None:

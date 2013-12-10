@@ -17,14 +17,15 @@
 ## along with Invenio; if not, write to the Free Software Foundation, Inc.,
 ## 59 Temple Place, Suite 330, Boston, MA 02111-1307, USA.
 
+class FieldParserException(Exception):
+    """Exception raised when some error happens parsing field definitions"""
+    pass
 
-def get_creation_date(recid):
-    """
-    Returns creation date for given record.
 
-    @param recid:
+class ModelParserException(Exception):
+    """Exception raised when some error happens parsing model definitions"""
+    pass
 
-    @return: Creation date
-    """
-    from invenio.modules.record_editor.models import Bibrec
-    return Bibrec.query.get(recid).creation_date
+class ReaderException(Exception):
+    """Exception raised when some error happens reading a blob"""
+    pass

@@ -52,3 +52,4 @@ Flask-Script==0.6.2
 #Flask-Testing==0.4
 http://github.com/jarus/flask-testing/zipball/master#egg=Flask-Testing-0.4.1
 Flask-WTF==0.9.3
+Cerberus==0.5

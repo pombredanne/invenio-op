@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-
+##
 ## This file is part of Invenio.
 ## Copyright (C) 2013 CERN.
 ##
@@ -18,17 +18,14 @@
 ## 59 Temple Place, Suite 330, Boston, MA 02111-1307, USA.
 
 """
-    invenio.utils.jsonalchemy.engines.mongo_pymongo
+    invenio.modules.jsonalchemy.engines.mongo_pymongo
     ------------------------------------------
 
 """
 
-from itertools import izip, imap
-
 import pymongo
 
-from invenio.utils.jsonalchemy.storage import Storage
-
+from invenio.modules.jsonalchemy.storage import Storage
 
 class MongoDBStorage(Storage):
     """
@@ -37,8 +34,7 @@ class MongoDBStorage(Storage):
 
     def __init__(self, model, **kwards):
         """
-        TBC
-        See also :meth:`~invenio.utils.jsonalchemy.storage:Storage.__init__`
+        See also :meth:`~invenio.modules.jsonalchemy.storage:Storage.__init__`
         """
         self.model = model
         host = kwards.get('host', 'localhost')
@@ -49,23 +45,23 @@ class MongoDBStorage(Storage):
         self.__collection = self.__database[model]
 
     def save_one(self, json, id=None):
-        """See :meth:`~invenio.utils.jsonalchemy.storage:Storage.save_one`"""
+        """See :meth:`~invenio.modules.jsonalchemy.storage:Storage.save_one`"""
         if not id is None:
             json['_id'] = id
         return self.__collection.insert(json)
 
     def save_many(self, jsons, ids=None):
-        """See :meth:`~invenio.utils.jsonalchemy.storage:Storage.save_many`"""
+        """See :meth:`~invenio.modules.jsonalchemy.storage:Storage.save_many`"""
         if not ids is None:
             def add_id(t):
                 t[0]['_id'] = t[1]
                 return t[0]
-            jsons = impa(add_id, izip(jsons, ids))
+            jsons = impa(add_id, zip(jsons, ids))
 
         return self.__collection.insert(jsons, continue_on_error=True)
 
     def update_one(self, json, id=None):
-        """See :meth:`~invenio.utils.jsonalchemy.storage:Storage.update_one`"""
+        """See :meth:`~invenio.modules.jsonalchemy.storage:Storage.update_one`"""
         #FIXME: what if we get only the fields that have change
         if not recid is None:
             json['_id'] = recid
@@ -73,32 +69,29 @@ class MongoDBStorage(Storage):
         return self.__collection.save(json)
 
     def update_many(self, jsons, ids=None):
-        """See :meth:`~invenio.utils.jsonalchemy.storage:Storage.update_many`"""
+        """See :meth:`~invenio.modules.jsonalchemy.storage:Storage.update_many`"""
         if not recids is None:
             def add_id(t):
                 t[0]['_id'] = t[1]
                 return t[0]
-            jsons = impa(add_id, izip(jsons, ids))
+            jsons = impa(add_id, zip(jsons, ids))
 
-        return imap(self.__collection.save, jsons)
+        return map(self.__collection.save, jsons)
 
     def get_one(self, id):
-        """See :meth:`~invenio.utils.jsonalchemy.storage:Storage.get_one`"""
+        """See :meth:`~invenio.modules.jsonalchemy.storage:Storage.get_one`"""
         return self.__collection.find_one(id)
 
     def get_many(self, ids):
-        """See :meth:`~invenio.utils.jsonalchemy.storage:Storage.get_many`"""
+        """See :meth:`~invenio.modules.jsonalchemy.storage:Storage.get_many`"""
         return self.__collection.find({'_id': {'$in':ids}})
 
     def get_field_values(recids, field, repetitive_values=True, count=False,
             include_recid=False, split_by=0):
-        """See :meth:`~invenio.utils.jsonalchemy.storage:Storage.get_field_values`"""
+        """See :meth:`~invenio.modules.jsonalchemy.storage:Storage.get_field_values`"""
         raise NotImplementedError()
 
     def get_fields_values(recids, fields, repetitive_values=True, count=False,
             include_recid=False, split_by=0):
-        """See :meth:`~invenio.utils.jsonalchemy.storage:Storage.get_fields_values`"""
+        """See :meth:`~invenio.modules.jsonalchemy.storage:Storage.get_fields_values`"""
         raise NotImplementedError()
-
-
-

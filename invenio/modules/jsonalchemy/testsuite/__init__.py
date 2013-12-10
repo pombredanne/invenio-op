@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 ##
 ## This file is part of Invenio.
-## Copyright (C) 2013 CERN.
+## Copyright (C) 2014 CERN.
 ##
 ## Invenio is free software; you can redistribute it and/or
 ## modify it under the terms of the GNU General Public License as
@@ -17,15 +17,7 @@
 ## along with Invenio; if not, write to the Free Software Foundation, Inc.,
 ## 59 Temple Place, Suite 330, Boston, MA 02111-1307, USA.
 
-
-def get_cited_by_count(recid):
-    """
-    Return how many records cite given record.
-
-    @param recid:
-
-    @return: Number of records citing given record
-    """
-    from invenio.legacy.bibrank.citation_searcher import get_cited_by_count
-    if recid:
-        return get_cited_by_count(recid)
+from .test_parser import *
+from .test_reader import *
+from .test_storage_engine import *
+from .test_wrapper import *

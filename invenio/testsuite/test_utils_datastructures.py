@@ -21,7 +21,7 @@
 Test unit for the miscutil/datastructures module.
 """
 
-from invenio.utils.datastructures import LazyDict, LaziestDict
+from invenio.utils.datastructures import LazyDict, LaziestDict, SmartDict
 from invenio.testsuite import make_test_suite, run_test_suite, InvenioTestCase
 
 class CallCounter(object):
@@ -89,6 +89,41 @@ class TestLazyDictionaries(InvenioTestCase):
         self.assertEqual(populate.counter, 4)
         self.assertEqual(laziest_dict.get('does not exists'), None)
         self.assertEqual(populate.counter, 5)
+
+
+class TestSmartDict(InvenioTestCase):
+    """
+    Smart Dictionary TestSuite
+    """
+
+    def test_smart_dict(self):
+        d = SmartDict()
+
+        d['foo'] = {'a': 'world', 'b':'hello'}
+        d['a'] = [ {'b':1}, {'b':2}, {'b':3} ]
+        self.assertEqual(d.keys(), ['a', 'foo'])
+        self.assertTrue('foo.a' in d)
+        del d['foo']
+        self.assertEqual(d.keys(), ['a'])
+        self.assertEqual(d['a'], [{'b':1}, {'b':2}, {'b':3}])
+        self.assertEqual(d['a[0]'], {'b':1})
+        self.assertEqual(d['a.b'], [1,2,3])
+        self.assertEqual(d['a[1:]'], [{'b':2}, {'b':3}])
+
+        d.set('a', {'b':4}, extend=True)
+        self.assertEqual(d['a'], [{'b':1}, {'b':2}, {'b':3}, {'b':4}])
+        d.set('a', [ {'b':1}, {'b':2}, {'b':3} ], extend=False)
+        self.assertEqual(d['a'], [{'b':1}, {'b':2}, {'b':3}])
+
+        self.assertEqual(d.get('does not exists'), None)
+
+        d = SmartDict()
+        d.set('a.b.c[n]', 'foo', True)
+        self.assertEqual(d['a.b.c'], ['foo'])
+        d.set('a.b.c[n]', 'bar', True)
+        self.assertEqual(d['a.b.c'], ['foo', 'bar'])
+        d.set('a.b.c', ['foo'], False)
+        self.assertEqual(d['a.b.c'], ['foo'])
 
 
 TEST_SUITE = make_test_suite(TestLazyDictionaries, )
