@@ -41,9 +41,9 @@ from invenio.base.factory import with_app_context
 from invenio.ext.email import send_email
 from invenio.ext.logging import register_exception
 from invenio.modules.workflows.api import start
+from invenio.modules.workflows.errors import WorkflowError
 from invenio.modules.workflows.models import (BibWorkflowEngineLog,
                                               BibWorkflowObjectLog)
-from invenio.modules.workflows.utils import InvenioWorkflowError
 
 from invenio.legacy.webuser import email_valid_p
 from invenio.legacy.bibsched.bibtask import (task_get_task_param,
@@ -72,7 +72,7 @@ def task_run_core():
     try:
         workflow = start(workflow_name, data=[123], stop_on_error=True, options=task_get_option(None))
 
-    except InvenioWorkflowError as e:
+    except WorkflowError as e:
 
         write_message("ERROR HAPPEN")
         write_message("____________Workflow log output____________")
