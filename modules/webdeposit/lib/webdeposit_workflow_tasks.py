@@ -159,7 +159,7 @@ def render_form(draft_id='_default'):
 
 
 def load_record(draft_id='_default', producer='json_for_form',
-                post_process=None):
+                pre_process=None, post_process=None):
     """
     Load a record and map to draft data.
     """
@@ -239,7 +239,8 @@ def load_record(draft_id='_default', producer='json_for_form',
     return _load_record
 
 
-def merge_record(draft_id='_default', process_load=None, process_export=None):
+def merge_record(draft_id='_default', pre_process_load=None,
+                 post_process_load=None, process_export=None):
     """
     Merge recjson with a record
 
@@ -261,7 +262,8 @@ def merge_record(draft_id='_default', process_load=None, process_export=None):
         initial_record = deposition_record(
             current_record,
             [form_class],
-            process_load=process_load,
+            pre_process_load=pre_process_load,
+            post_process_load=post_process_load,
             process_export=partial(process_export, d),
         )
         changed_record = make_record(sip.metadata)

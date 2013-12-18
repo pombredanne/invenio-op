@@ -29,12 +29,15 @@ class WebDepositFormTest(InvenioTestCase):
         from invenio.webdeposit_load_fields import fields
         from werkzeug import MultiDict
 
-        def reset_processor(form, field, submit):
+        def reset_processor(form, field, submit=False, fields=None):
             field.data = 'RESET'
 
         def dummy_autocomplete(form, field, term, limit=50):
             if term == 'test':
-                return map(lambda x: field.name + '-' + str(x), range(0, 100))[:limit]
+                return map(
+                    lambda x: field.name + '-' + str(x),
+                    range(0, 100)
+                )[:limit]
             return []
 
         class IdentifierTestForm(WebDepositForm):
@@ -44,7 +47,8 @@ class WebDepositFormTest(InvenioTestCase):
             )
             identifier = fields.TextField()
 
-            def post_process_identifier(self, form, field, submit):
+            def post_process_identifier(self, form, field, submit=False,
+                                        fields=None):
                 form.scheme.data = field.data
 
         class TestForm(WebDepositForm):

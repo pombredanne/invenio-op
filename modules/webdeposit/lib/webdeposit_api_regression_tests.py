@@ -743,6 +743,39 @@ class WebDepositZenodoApiTest(WebDepositApiBaseTestCase):
         self.assert_error('communities', response)
         self.assert_error('description', response)
 
+    def test_form_flags_issues(self):
+        test_data = dict(
+            metadata=dict(
+                access_right='open',
+                license='cc-by-sa',
+                upload_type='dataset',
+                title='Form flags issues',
+                creators=[{'name': 'Lars', 'affiliation': 'CERN'}, ],
+                description="Bla bla",
+            )
+        )
+        response = self.post(
+            'depositionlistresource', data=test_data, code=201,
+        )
+        m = response.json['metadata']
+        self.assertEqual(m['license'], 'cc-by-sa')
+        self.assertEqual(m['embargo_date'], None)
+
+        test_data = dict(
+            metadata=dict(
+                access_right='closed',
+                license='cc-by-sa',  # Not valid for closed access articles.
+                upload_type='dataset',
+                title='Form flags issues',
+                creators=[{'name': 'Lars', 'affiliation': 'CERN'}, ],
+                description="Bla bla",
+            )
+        )
+        response = self.post(
+            'depositionlistresource', data=test_data, code=201,
+        )
+        self.assertEqual(response.json['metadata']['license'], None)
+
     def test_pre_reserve_doi(self):
         response = self.post(
             'depositionlistresource', data=self.get_test_data(
@@ -1400,7 +1433,7 @@ class WebDepositZenodoApiTest(WebDepositApiBaseTestCase):
                     dict(name="Smith, Jane", affiliation="Atlantis")
                 ],
                 description="<p>Test <em>Description</em></p>",
-                license="cc-zero",
+                license="cc-by-sa",
             )
         )
 
@@ -1462,6 +1495,38 @@ class WebDepositZenodoApiTest(WebDepositApiBaseTestCase):
             urlargs=dict(resource_id=res_id, action_id='edit'),
             code=201
         )
+
+    def test_marshalling(self):
+        """
+        """
+        res_id = self._create_and_upload()
+
+        # Get marshalling via record
+        response = self.get(
+            'depositionresource',
+            urlargs=dict(resource_id=res_id),
+            code=200
+        )
+        record_marshal = response.json['metadata']
+
+        # Edit deposition
+        response = self.post(
+            'depositionactionresource',
+            urlargs=dict(resource_id=res_id, action_id='edit'),
+            code=201
+        )
+
+        # Get marshalling via a loaded drafts
+        response = self.get(
+            'depositionresource',
+            urlargs=dict(resource_id=res_id),
+            code=200
+        )
+        draft_marshal = response.json['metadata']
+
+        self.assertEqual(record_marshal['license'], 'cc-by-sa')
+        self.assertEqual(draft_marshal['license'], 'cc-by-sa')
+        self.assertEqual(record_marshal, draft_marshal)
 
 
 TEST_SUITE = make_test_suite(WebDepositApiTest, WebDepositZenodoApiTest)

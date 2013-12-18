@@ -22,8 +22,8 @@ from invenio.bibfield_jsonreader import JsonReader
 from invenio.webdeposit_models import DepositionDraft
 
 
-def record_to_draft(record, draft=None, form_class=None, post_process=None,
-                    producer='json_for_form'):
+def record_to_draft(record, draft=None, form_class=None, pre_process=None,
+                    post_process=None, producer='json_for_form'):
     """
     Load a record into a draft
     """
@@ -32,6 +32,9 @@ def record_to_draft(record, draft=None, form_class=None, post_process=None,
 
     draft.values = getattr(record, 'produce_%s' % producer)()
 
+    if pre_process:
+        draft = pre_process(draft)
+
     if draft.has_form():
         form = draft.get_form()
         form.post_process()
@@ -39,7 +42,7 @@ def record_to_draft(record, draft=None, form_class=None, post_process=None,
 
     # Custom post process function
     if post_process:
-        draft.values = post_process(draft.values)
+        draft = post_process(draft)
 
     return draft
 
@@ -56,14 +59,21 @@ def drafts_to_record(drafts, post_process=None):
     return make_record(values)
 
 
-def deposition_record(record, form_classes, process_load=None,
-                      process_export=None):
+def deposition_record(record, form_classes, pre_process_load=None,
+                      post_process_load=None, process_export=None):
     """
     Generate recjson representation of a record for this given deposition.
     """
     return drafts_to_record(
-        [record_to_draft(record, form_class=cls, post_process=process_load, )
-         for cls in form_classes],
+        [
+            record_to_draft(
+                record,
+                form_class=cls,
+                pre_process=pre_process_load,
+                post_process=post_process_load,
+            )
+            for cls in form_classes
+        ],
         post_process=process_export
     )
 
