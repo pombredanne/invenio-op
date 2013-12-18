@@ -567,7 +567,7 @@ class CoolList(list):
     def append(self, element):
         """@see __setitem__() """
         self += [None]
-        self._consumed += [None]
+        self._consumed = getattr(self, '_consumed', []) + [None]
         self[len(self) - 1] = element
 
     @property

@@ -46,6 +46,7 @@ from invenio.bibformat import format_record
 from webdeposit_recordhelpers import record_to_draft, make_record, \
     deposition_record
 from invenio.bibdocfile import BibRecDocs
+from invenio.bibfield_utils import CoolList
 
 try:
     from invenio.pidstore_model import PersistentIdentifier
@@ -276,10 +277,16 @@ def merge_record(draft_id='_default', process_load=None, process_export=None):
             if k not in current_record.rec_json:
                 current_record.rec_json[k] = initial_record[k]
 
+        # Fix Pyton 2.6 compatibility issue in CoolList deepcopy'ing
+        map_fun = lambda x: list(x) if isinstance(x, CoolList) else x
+        metadata = dict([
+            (k, map_fun(v)) for k, v in current_record.rec_json.items()
+        ])
+
         # Apply patch
         sip.metadata = dictdiffer.patch(
             patch,
-            current_record.rec_json
+            metadata
         )
 
         # Ensure we are based on latest version_id to prevent being rejected in
