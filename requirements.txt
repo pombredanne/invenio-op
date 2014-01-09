@@ -36,7 +36,6 @@ Flask==0.10.1
 WTForms>=1.0.5
 fixture==1.4
 redis==2.8.0
-http://darcs.idyll.org/~t/projects/twill-0.9.tar.gz
 unittest2==0.5.1
 webassets==0.7
 Flask-Admin==1.0.6
@@ -53,5 +52,6 @@ git+https://github.com/mitsuhiko/flask-sqlalchemy#egg=Flask-SQLAlchemy
 git+git://github.com/inveniosoftware/flask-menu.git
 git+git://github.com/inveniosoftware/flask-breadcrumbs.git
 Flask-Script==0.6.2
-Flask-Testing==0.4
+#Flask-Testing==0.4
+http://github.com/jarus/flask-testing/zipball/master#egg=Flask-Testing-dev
 Flask-WTF==0.9.3
