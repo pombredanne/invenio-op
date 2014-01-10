@@ -43,7 +43,7 @@ install:
   - ". `which virtualenvwrapper.sh`"
   - mkvirtualenv invenio
   - workon invenio
-  - "pip install -e ."
+  - "pip install ."
   - "pybabel compile -f -d invenio/base/translations/"
   - "inveniomanage config create secret-key"
   - "inveniomanage config set CFG_EMAIL_BACKEND flask.ext.email.backends.console.Mail"
