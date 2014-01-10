@@ -1587,7 +1587,7 @@ def get_recIDs_by_date_bibliographic(dates, index_name, force_all=False):
     # special case of author indexes where we need to re-index
     # those records that were affected by changed BibAuthorID attributions:
     if index_name in ('author', 'firstauthor', 'exactauthor', 'exactfirstauthor'):
-        from invenio.bibauthorid_personid_maintenance import get_recids_affected_since
+        from invenio.legacy.bibauthorid.personid_maintenance import get_recids_affected_since
         # dates[1] is ignored, since BibAuthorID API does not offer upper limit search
         rec_list_author = intbitset(get_recids_affected_since(dates[0]))
         res = res | rec_list_author
