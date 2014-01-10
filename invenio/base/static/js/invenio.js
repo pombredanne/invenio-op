@@ -167,7 +167,7 @@
       // Focuses on first input textbox after it loads the window.
       $('[data-toggle="modal"]').click(function(e) {
           e.preventDefault();
-          var href = $(this).attr('data-target');
+          var href = $(this).attr('href');
           if (href.indexOf('#') === 0) {
               $(href).modal('open');
           } else {

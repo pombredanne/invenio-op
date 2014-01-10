@@ -32,7 +32,7 @@
       {% if current_user.is_guest %}
         <a class="btn pull-right" href="{{ url_for('webaccount.login', referer=request.url) }}">
       {% else %}
-        <a class="btn pull-right" data-toggle="modal" data-target="{{ url_for('comments.add_review', recid=recid) }}">
+        <a class="btn pull-right" data-toggle="modal" href="{{ url_for('comments.add_review', recid=recid) }}">
       {% endif %}
           <i class="icon-pencil"></i> {{ _('write review') }}
         </a>
@@ -111,7 +111,7 @@
           <i class="icon-pencil"></i> {{ _('write review') }}
         </a>
       {% else %}
-        <a class="btn pull-right" data-toggle="modal" data-target="{{ url_for('comments.add_review', recid=recid) }}">
+        <a class="btn pull-right" data-toggle="modal" href="{{ url_for('comments.add_review', recid=recid) }}">
           <i class="icon-pencil"></i> {{ _('write review') }}
         </a>
       {% endif %}

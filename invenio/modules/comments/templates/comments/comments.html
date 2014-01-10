@@ -36,7 +36,7 @@
         {% if current_user.is_guest %}
           <a class="btn pull-right" href="{{ url_for('webaccount.login', referer=request.url) }}">
         {% else %}
-          <a class="btn pull-right" data-toggle="modal" data-target="{{ url_for('comments.add_comment', recid=recid) }}">
+          <a class="btn pull-right" data-toggle="modal" href="{{ url_for('comments.add_comment', recid=recid) }}">
         {% endif %}
             <i class="icon-pencil"></i> {{ _('write comment') }}
           </a>
@@ -100,7 +100,7 @@
         {% if current_user.is_guest %}
           <a href="{{ url_for('webaccount.login', referer=url_for('comments.add_comment', recid=recid, in_reply=c.id)) }}">
         {% else %}
-          <a data-toggle="modal" data-target="{{ url_for('comments.add_comment', recid=recid, in_reply=c.id) }}">
+          <a data-toggle="modal" href="{{ url_for('comments.add_comment', recid=recid, in_reply=c.id) }}">
         {% endif %}
             {{ _('reply') }}
           </a>
@@ -141,7 +141,7 @@
   {% if current_user.is_guest %}
     <a class="btn pull-right" href="{{ url_for('webaccount.login', referer=request.url) }}">
   {% else %}
-    <a class="btn pull-right" data-toggle="modal" data-target="{{ url_for('comments.add_comment', recid=recid) }}">
+    <a class="btn pull-right" data-toggle="modal" href="{{ url_for('comments.add_comment', recid=recid) }}">
   {% endif %}
       <i class="icon-pencil"></i> {{ _('write comment') }}
     </a>
