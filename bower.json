@@ -17,7 +17,7 @@
     "jquery.ui": "1-8-stable",
     "jquery.ui.timepicker": "http://invenio-software.org/download/jquery/jquery-ui-timepicker-addon-1.0.3.js",
     "jquery.multifile": "http://jquery-multifile-plugin.googlecode.com/svn/trunk/jquery.MultiFile.pack.js",
-    "jquery.ajaxpager" : "http://invenio-software.org/download/jquery/v1.5/js/jquery.ajaxPager.js",
+    "jquery.ajaxpager": "http://invenio-software.org/download/jquery/v1.5/js/jquery.ajaxPager.js",
     "jquery.bookmark": "http://invenio-software.org/download/jquery/jquery.bookmark.package-1.4.0.zip",
     "DataTables": "1_9",
     "jquery-flot": "*",
@@ -29,5 +29,8 @@
     "swfobject": "https://github.com/swfobject/swfobject/blob/master/swfobject/swfobject.js",
     "datatables-colvis": "*",
     "typeahead.js-bootstrap": "https://raw.github.com/jharding/typeahead.js-bootstrap.css/master/typeahead.js-bootstrap.css"
+  },
+  "resolutions": {
+    "jquery": "2.0.3"
   }
 }
