@@ -43,6 +43,7 @@ install:
   - ". `which virtualenvwrapper.sh`"
   - mkvirtualenv invenio
   - workon invenio
+  - "pip install -r requirements.txt"
   - "pip install ."
   - "pybabel compile -f -d invenio/base/translations/"
   - "inveniomanage config create secret-key"
