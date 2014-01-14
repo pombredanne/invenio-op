@@ -78,6 +78,7 @@ module.exports = function (grunt) {
                      ,'typeahead.js/dist/typeahead.js'
                      ,'typeahead.js/dist/typeahead.min.js'
                      ,'jquery/jquery.min.js'
+                     ,'jquery/jquery.min.map'
                      ,'jquery-tokeninput/src/jquery.tokeninput.js'
                      ,'jquery.bookmark/jquery.bookmark.min.js'
                      ,'DataTables/media/js/jquery.dataTables.js'
