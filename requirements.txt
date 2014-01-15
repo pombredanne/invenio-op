@@ -10,7 +10,7 @@ mechanize==0.2.5
 python-Levenshtein==0.10.2
 http://pybrary.net/pyPdf/pyPdf-1.13.tar.gz#egg=pyPdf-1.13
 PyStemmer==1.3.0
-https://py-editdist.googlecode.com/files/py-editdist-0.3.tar.gz#egg=py-editdist-0.3
+https://py-editdist.googlecode.com/files/py-editdist-0.3.tar.gz#egg=editdist-0.3
 feedparser==5.1.3
 BeautifulSoup==3.2.1
 beautifulsoup4==4.3.2
@@ -18,7 +18,7 @@ python-twitter==0.8.7
 celery==3.0.17
 msgpack-python==0.3.0
 pyparsing==1.5.6
-git+git://github.com/romanchyla/workflow.git@e41299579501704b1486c72cc2509a9f82e63ea6#egg=workflow
+git+git://github.com/romanchyla/workflow.git@e41299579501704b1486c72cc2509a9f82e63ea6#egg=workflow-1.1.0
 requests==1.2.3
 PyPDF2
 rauth
@@ -26,7 +26,7 @@ unidecode
 https://pyfilesystem.googlecode.com/files/fs-0.4.0.tar.gz#egg=fs-0.4.0
 libmagic==1.0
 Babel==1.3
-git+https://github.com/inveniosoftware/intbitset#egg=intbitset
+git+https://github.com/inveniosoftware/intbitset#egg=intbitset-2.0
 Jinja2==2.7.1
 SQLAlchemy==0.8.3
 Flask==0.10.1
@@ -45,10 +45,10 @@ Flask-Gravatar==0.4.0
 Flask-Login==0.2.7
 Flask-Principal==0.4.0
 #Flask-SQLAlchemy==1.0
-git+https://github.com/mitsuhiko/flask-sqlalchemy#egg=Flask-SQLAlchemy
-git+git://github.com/inveniosoftware/flask-menu.git#egg=Flask-Menu
-git+git://github.com/inveniosoftware/flask-breadcrumbs.git#egg=Flask-Breadcrumbs
+git+https://github.com/mitsuhiko/flask-sqlalchemy#egg=Flask-SQLAlchemy-2.0_dev_20140115
+git+git://github.com/inveniosoftware/flask-menu.git#egg=Flask-Menu-0.1
+git+git://github.com/inveniosoftware/flask-breadcrumbs.git#egg=Flask-Breadcrumbs-0.1
 Flask-Script==0.6.2
 #Flask-Testing==0.4
-http://github.com/jarus/flask-testing/zipball/master#egg=Flask-Testing-dev
+http://github.com/jarus/flask-testing/zipball/master#egg=Flask-Testing-0.4.1
 Flask-WTF==0.9.3
