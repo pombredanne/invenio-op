@@ -35,24 +35,24 @@ readers = lazy_import('invenio.modules.jsonalchemy.registry:readers')
 
 TEST_PACKAGE = 'invenio.modules.jsonalchemy.testsuite'
 
-test_registry = RegistryProxy('test_registry', ImportPathRegistry,
+test_registry = RegistryProxy('testsuite', ImportPathRegistry,
                               initial=[TEST_PACKAGE])
 
 field_definitions = lambda: PkgResourcesDiscoverRegistry(
-    'field_definitions', registry_namespace=test_registry)
+    'fields', registry_namespace=test_registry)
 model_definitions = lambda: PkgResourcesDiscoverRegistry(
-    'model_definitions', registry_namespace=test_registry)
+    'models', registry_namespace=test_registry)
 
 
 class TestReaders(InvenioTestCase):
 
     def setUp(self):
-        self.app.extensions['registry']['jsonext.fields'] = field_definitions()
-        self.app.extensions['registry']['jsonext.models'] = model_definitions()
+        self.app.extensions['registry']['testsuite.fields'] = field_definitions()
+        self.app.extensions['registry']['testsuite.models'] = model_definitions()
 
     def tearDown(self):
-        del self.app.extensions['registry']['jsonext.fields']
-        del self.app.extensions['registry']['jsonext.models']
+        del self.app.extensions['registry']['testsuite.fields']
+        del self.app.extensions['registry']['testsuite.models']
 
     def test_marc_reader_translate(self):
         """JsonAlchemy - Marc reader"""
@@ -391,7 +391,7 @@ class TestReaders(InvenioTestCase):
         blob = list(readers['marc'].split_blob(xml, schema='foo'))
         self.assertTrue(len(blob) == 0)
         blob = list(readers['marc'].split_blob(xml))[0]
-        reader = readers['marc'](blob=blob)
+        reader = readers['marc'](blob=blob, namespace='testsuite')
         json = reader.translate()
         self.assertIsNotNone(json)
         self.assertTrue('__meta_metadata__' in json)
@@ -406,9 +406,10 @@ class TestReaders(InvenioTestCase):
         self.assertTrue('reference' in json)
         self.assertTrue(len(json['reference']) == 36)
 
-        reader = readers['marc'](blob=blob, model='test_model')
+        reader = readers['marc'](blob=blob, model='test_model', namespace='testsuite')
         json = reader.translate()
         self.assertTrue(json['__meta_metadata__']['__additional_info__']['model'] == 'test_model')
+        self.assertTrue(json['__meta_metadata__']['__additional_info__']['namespace'] == 'testsuite')
         self.assertTrue('title_article' in json)
 
 

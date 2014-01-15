@@ -79,9 +79,9 @@ def reset_rec_cache(output_format, get_record, split_by=1000):
 @manager.command
 @change_command_name
 def reset_recjson(split_by=1000):
-    """Reset record json structure cache."""
-    from invenio.legacy.bibfield.bibfield_manager import reset
-    reset(split_by)
+    """Reset record json structure cache lazily"""
+    from invenio.modules.records.models import RecordMetadata
+    RecordMetadata.query.delete()
 
 
 @manager.command
