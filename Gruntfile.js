@@ -54,7 +54,8 @@ module.exports = function (grunt) {
                        ,'jquery-tokeninput/styles/token-input-facebook.css'
                        ,'jquery-tokeninput/styles/token-input.css'
                        ,'jquery.bookmark/jquery.bookmark.css'
-                       ,'datatables-colvis/media/css/ColVis.css'],
+                       ,'datatables-colvis/media/css/ColVis.css'
+                       ,'DataTables-Plugins/integration/bootstrap/3/dataTables.bootstrap.css'],
                 dest: '<%= grunt.option(\'target\') %>/css/'
             },
 
@@ -65,7 +66,8 @@ module.exports = function (grunt) {
                 src: ['jquery.bookmark/bookmarks.png'
                        ,'uploadify/uploadify*'
                        ,'!uploadify/uploadify.php'
-                       ,'datatables-colvis/media/images/button.png'],
+                       ,'datatables-colvis/media/images/button.png'
+                       ,'DataTables-Plugins/integration/bootstrap/3/images/*.png'],
                 dest: '<%= grunt.option(\'target\') %>/img/'
             },
 
@@ -88,7 +90,8 @@ module.exports = function (grunt) {
                      ,'jquery.hotkeys/jquery.hotkeys.js'
                      ,'uploadify/jquery.uploadify.min.js'
                      ,'json2/json2.js'
-                     ,'datatables-colvis/media/js/ColVis.js'],
+                     ,'datatables-colvis/media/js/ColVis.js'
+                     ,'DataTables-Plugins/integration/bootstrap/3/dataTables.bootstrap.js'],
                 dest: '<%= grunt.option(\'target\') %>/js/'
             },
 
@@ -330,13 +333,14 @@ module.exports = function (grunt) {
                       'token-input.css',
                       'jquery.bookmark.css',
                       'ColVis.css',
-                      'typeahead.js-bootstrap.css']
+                      'typeahead.js-bootstrap.css',
+                      'dataTables.bootstrap.css']
             },
 
             img: {
                 expand: true,
                 cwd: '<%= grunt.option(\'target\') %>/img/',
-                src: ['bookmarks.png', 'uploadify*', 'button.png']
+                src: ['bookmarks.png', 'uploadify*', 'button.png', 'sort_*.png']
             },
 
             fonts: {
@@ -370,7 +374,8 @@ module.exports = function (grunt) {
                      ,'json2.js'
                      ,'prism.js'
                      ,'swfobject.js'
-                     ,'ColVis.js']
+                     ,'ColVis.js'
+                     ,'dataTables.bootstrap.js']
             },
 
             MathJax: {

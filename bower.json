@@ -28,7 +28,8 @@
     "prism": "https://github.com/LeaVerou/prism/blob/gh-pages/prism.js",
     "swfobject": "https://github.com/swfobject/swfobject/blob/master/swfobject/swfobject.js",
     "datatables-colvis": "*",
-    "typeahead.js-bootstrap": "https://raw.github.com/jharding/typeahead.js-bootstrap.css/master/typeahead.js-bootstrap.css"
+    "typeahead.js-bootstrap": "https://raw.github.com/jharding/typeahead.js-bootstrap.css/master/typeahead.js-bootstrap.css",
+    "DataTables-Plugins": "https://github.com/DataTables/Plugins.git"
   },
   "resolutions": {
     "jquery": "2.0.3"
