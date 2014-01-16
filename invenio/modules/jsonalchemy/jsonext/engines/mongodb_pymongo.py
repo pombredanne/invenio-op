@@ -95,3 +95,7 @@ class MongoDBStorage(Storage):
             include_recid=False, split_by=0):
         """See :meth:`~invenio.modules.jsonalchemy.storage:Storage.get_fields_values`"""
         raise NotImplementedError()
+
+    def search(self, query):
+        """See :meth:`~invenio.modules.jsonalchemy.storage:Storage.search`"""
+        return self.__collection.find(query)
