@@ -326,6 +326,9 @@ class SmartDict(object):
     def set(self, key, value, extend=False):
         self.__setitem__(key, value, extend)
 
+    def update(self, new):
+        self._dict.update(new)
+
 
 def flatten_multidict(multidict):
     return dict([(key, value if len(value) > 1 else value[0])
