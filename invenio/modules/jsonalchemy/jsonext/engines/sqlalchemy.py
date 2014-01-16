@@ -113,3 +113,7 @@ class SQLAlchemyStorage(Storage):
         """See :meth:`~invenio.modules.jsonalchemy.storage:Storage.get_fields_values`"""
         #TODO
         raise NotImplementedError()
+
+    def search(query):
+        """See :meth:`~invenio.modules.jsonalchemy.storage:Storage.search`"""
+        raise NotImplementedError()

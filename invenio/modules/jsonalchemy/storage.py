@@ -53,7 +53,7 @@ class Storage(six.with_metaclass(abc.ABCMeta, object)):
     @abc.abstractmethod
     def update_one(self, json, id=None):
         """
-        Updates one json , if id is None a field representing the id is 
+        Updates one json , if id is None a field representing the id is
         expected inside the json object.
         """
 
@@ -89,4 +89,13 @@ class Storage(six.with_metaclass(abc.ABCMeta, object)):
         """
         As in :meth:`get_field_values` but in this case returns a dictionary with each
         of the fields and the list of field values.
+        """
+
+    @abc.abstractmethod
+    def search(query):
+        """
+        Retrieves all entries which match the query JSON prototype document.
+        This method should not be used on storage engines without native JSON
+        support (e.g., MySQL). Returns a cursor over the matched documents.
+        :param query: dictionary specifying the search prototype document
         """
