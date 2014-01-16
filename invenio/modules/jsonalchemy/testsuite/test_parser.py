@@ -37,13 +37,13 @@ get_producer_rules = lazy_import('invenio.modules.jsonalchemy.parser:get_produce
 
 TEST_PACKAGE = 'invenio.modules.jsonalchemy.testsuite'
 
-test_registry = RegistryProxy('test_registry', ImportPathRegistry,
+test_registry = RegistryProxy('testsuite', ImportPathRegistry,
                               initial=[TEST_PACKAGE])
 
 field_definitions = lambda: PkgResourcesDiscoverRegistry(
-    'field_definitions', registry_namespace=test_registry)
+    'fields', registry_namespace=test_registry)
 model_definitions = lambda: PkgResourcesDiscoverRegistry(
-    'model_definitions', registry_namespace=test_registry)
+    'models', registry_namespace=test_registry)
 
 
 class TestParser(InvenioTestCase):
@@ -98,70 +98,70 @@ authors[n], contributor:
         self.tmp_file_2.write(config_2)
         self.tmp_file_2.flush()
 
-        self.app.extensions['registry']['jsonext.fields'] = field_definitions()
-        for path in self.app.extensions['registry']['jsonext.fields'].registry:
+        self.app.extensions['registry']['testsuite.fields'] = field_definitions()
+        for path in self.app.extensions['registry']['testsuite.fields'].registry:
             if os.path.basename(path) == 'authors.cfg':
-                self.app.extensions['registry']['jsonext.fields'].registry.remove(path)
-        self.app.extensions['registry']['jsonext.fields'].register(self.tmp_file_2.name)
-        self.app.extensions['registry']['jsonext.models'] = model_definitions()
+                self.app.extensions['registry']['testsuite.fields'].registry.remove(path)
+        self.app.extensions['registry']['testsuite.fields'].register(self.tmp_file_2.name)
+        self.app.extensions['registry']['testsuite.models'] = model_definitions()
 
     def tearDown(self):
-        del self.app.extensions['registry']['jsonext.fields']
-        del self.app.extensions['registry']['jsonext.models']
+        del self.app.extensions['registry']['testsuite.fields']
+        del self.app.extensions['registry']['testsuite.models']
         self.tmp_file_1.close()
         self.tmp_file_2.close()
 
     def test_field_rules(self):
         """JsonAlchemy - field parser"""
-        self.assertTrue(len(Field_parser.field_definitions) >= 22)
+        self.assertTrue(len(Field_parser.field_definitions('testsuite')) >= 22)
         #Check that all files are parsed
-        self.assertTrue('authors' in Field_parser.field_definitions)
-        self.assertTrue('title' in Field_parser.field_definitions)
+        self.assertTrue('authors' in Field_parser.field_definitions('testsuite'))
+        self.assertTrue('title' in Field_parser.field_definitions('testsuite'))
         #Check work arroung for [n] and [0]
-        self.assertTrue(len(Field_parser.field_definitions['authors']) == 2)
-        self.assertEqual(Field_parser.field_definitions['authors'], ['authors[0]', 'authors[n]'])
-        self.assertTrue('authors[0]' in Field_parser.field_definitions)
-        self.assertTrue('authors[n]' in Field_parser.field_definitions)
-        self.assertTrue(Field_parser.field_definitions['doi']['persistent_identifier'])
+        self.assertTrue(len(Field_parser.field_definitions('testsuite')['authors']) == 2)
+        self.assertEqual(Field_parser.field_definitions('testsuite')['authors'], ['authors[0]', 'authors[n]'])
+        self.assertTrue('authors[0]' in Field_parser.field_definitions('testsuite'))
+        self.assertTrue('authors[n]' in Field_parser.field_definitions('testsuite'))
+        self.assertTrue(Field_parser.field_definitions('testsuite')['doi']['persistent_identifier'])
         #Check if derived and calulated are well parserd
-        self.assertTrue('dummy' in Field_parser.field_definitions)
-        self.assertEquals(Field_parser.field_definitions['dummy']['persistent_identifier'], 2)
-        self.assertEquals(Field_parser.field_definitions['dummy']['rules'].keys(), ['derived'])
-        self.assertTrue(Field_parser.field_definitions['_random'])
+        self.assertTrue('dummy' in Field_parser.field_definitions('testsuite'))
+        self.assertEquals(Field_parser.field_definitions('testsuite')['dummy']['persistent_identifier'], 2)
+        self.assertEquals(Field_parser.field_definitions('testsuite')['dummy']['rules'].keys(), ['derived'])
+        self.assertTrue(Field_parser.field_definitions('testsuite')['_random'])
         #Check inheritance
-        self.assertTrue('main_author' in Field_parser.field_definitions)
-        self.assertEqual(Field_parser.field_definitions['main_author']['rules'],
-                         Field_parser.field_definitions['authors[0]']['rules'])
+        self.assertTrue('main_author' in Field_parser.field_definitions('testsuite'))
+        self.assertEqual(Field_parser.field_definitions('testsuite')['main_author']['rules'],
+                         Field_parser.field_definitions('testsuite')['authors[0]']['rules'])
         #Check override
         value = {'a':'a', 'b':'b', 'k':'k'}
-        self.assertEquals(eval(Field_parser.field_definitions['title']['rules']['marc'][0]['value']),
+        self.assertEquals(eval(Field_parser.field_definitions('testsuite')['title']['rules']['marc'][0]['value']),
                 {'form': 'k', 'subtitle': 'b', 'title': 'a'})
         #Check extras
-        self.assertTrue('json_ext' in Field_parser.field_definitions['modification_date'])
+        self.assertTrue('json_ext' in Field_parser.field_definitions('testsuite')['modification_date'])
 
-        tmp = Field_parser.field_definitions
-        Field_parser.reparse()
-        self.assertEquals(len(Field_parser.field_definitions), len(tmp))
+        tmp = Field_parser.field_definitions('testsuite')
+        Field_parser.reparse('testsuite')
+        self.assertEquals(len(Field_parser.field_definitions('testsuite')), len(tmp))
 
     def test_model_definitions(self):
         """JsonAlchemy - model parser"""
-        self.assertTrue(len(Model_parser.model_definitions) >= 2)
-        self.assertTrue('base' in Model_parser.model_definitions)
-        tmp = Model_parser.model_definitions
-        Model_parser.reparse()
-        self.assertEquals(len(Model_parser.model_definitions), len(tmp))
+        self.assertTrue(len(Model_parser.model_definitions('testsuite')) >= 2)
+        self.assertTrue('base' in Model_parser.model_definitions('testsuite'))
+        tmp = Model_parser.model_definitions('testsuite')
+        Model_parser.reparse('testsuite')
+        self.assertEquals(len(Model_parser.model_definitions('testsuite')), len(tmp))
 
     def test_guess_legacy_field_names(self):
         """JsonAlchemy - check legacy field names"""
-        self.assertEquals(guess_legacy_field_names(('100__a', '245'), 'marc'),
+        self.assertEquals(guess_legacy_field_names(('100__a', '245'), 'marc', 'testsuite'),
                 {'100__a':['authors[0].full_name'], '245':['title']})
-        self.assertEquals(guess_legacy_field_names('foo', 'bar'), {'foo': []})
+        self.assertEquals(guess_legacy_field_names('foo', 'bar', 'baz'), {'foo': []})
 
     def test_get_producer_rules(self):
         """JsonAlchemy - check producer rules"""
-        self.assertTrue(get_producer_rules('authors[0]', 'json_for_marc')[0] in get_producer_rules('authors', 'json_for_marc'))
-        self.assertTrue(len(get_producer_rules('keywords', 'json_for_marc')) == 1)
-        self.assertRaises(KeyError, lambda: get_producer_rules('foo', 'json_for_marc'))
+        self.assertTrue(get_producer_rules('authors[0]', 'json_for_marc', 'testsuite')[0] in get_producer_rules('authors', 'json_for_marc', 'testsuite'))
+        self.assertTrue(len(get_producer_rules('keywords', 'json_for_marc', 'testsuite')) == 1)
+        self.assertRaises(KeyError, lambda: get_producer_rules('foo', 'json_for_marc', 'testsuite'))
 
 
 TEST_SUITE = make_test_suite(TestParser)

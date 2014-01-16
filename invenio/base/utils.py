@@ -58,7 +58,7 @@ def import_module_from_packages(name, app=None, packages=None, silent=False):
         if app is None:
             raise Exception('Working outside application context or provide app')
         #FIXME
-        packages = ['invenio.core.*'] + app.config.get('PACKAGES', [])
+        packages = app.config.get('PACKAGES', [])
 
     for package in packages:
         if package.endswith('.*'):
@@ -148,8 +148,6 @@ def register_configurations(app):
     """
     from flask import Config
     new_config = Config(app.config.root_path)
-    for config in import_module_from_packages('config', app, ['invenio.core.*', ]):
-        new_config.from_object(config)
     for config in autodiscover_configs(app):
         new_config.from_object(config)
 

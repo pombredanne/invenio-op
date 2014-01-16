@@ -47,6 +47,10 @@ class Reader(six.with_metaclass(abc.ABCMeta, object)):
         self.json = None
         self._additional_info = kwargs
         self._additional_info['model'] = kwargs.get('model', '__default__')
+        self._additional_info['namespace'] = kwargs.get('namespace', None)
+
+        if self._additional_info['namespace'] is None:
+            raise ReaderException('A namespace is needed to instantiate a reader')
 
         self._parsed = []
 
@@ -57,6 +61,18 @@ class Reader(six.with_metaclass(abc.ABCMeta, object)):
         split then and work one by one afterwards.
         """
         raise NotImplementedError()
+
+    @property
+    def field_definitions(self):
+        return FieldParser.field_definitions(self._additional_info['namespace'])
+
+    @property
+    def model_definitions(self):
+        return ModelParser.model_definitions(self._additional_info['namespace'])
+
+    @property
+    def functions(self):
+        return functions(self._additional_info['namespace'])
 
     def translate(self):
         """
@@ -81,12 +97,12 @@ class Reader(six.with_metaclass(abc.ABCMeta, object)):
         self.json['__meta_metadata__']['__errors__'] = []
         self.json['__meta_metadata__']['__continuable_errors__'] = []
         if self._additional_info['model'] == '__default__' or \
-                self._additional_info['model'] not in ModelParser.model_definitions:
+                self._additional_info['model'] not in self.model_definitions:
             self.json['__meta_metadata__']['__continuable_errors__']\
                     .append("Warning - Using 'default' model for 'transalte', given model: '%s'" % (self._additional_info['model'], ))
-            fields = dict(zip(FieldParser.field_definitions.keys(), FieldParser.field_definitions.keys()))
+            fields = dict(zip(self.field_definitions.keys(), self.field_definitions.keys()))
         else:
-            fields = ModelParser.model_definitions[self._additional_info['model']]['fields']
+            fields = self.model_definitions[self._additional_info['model']]['fields']
 
         self.add(self.json, self.blob, fields)
         return self.json._dict
@@ -107,12 +123,12 @@ class Reader(six.with_metaclass(abc.ABCMeta, object)):
             except KeyError as e:
                 raise ReaderException('The json structure must contain a model (%s)' % (e, ))
 
-            if model == '__default__' or model not in ModelParser.model_definitions:
+            if model == '__default__' or model not in self.model_definitions:
                 self.json['__meta_metadata__']['__continuable_errors__']\
                     .append("Warning - Using 'default' model for 'add', given model: '%s'" % (model, ))
                 fields = dict(zip(fields, fields))
             else:
-                fields = dict((field, ModelParser.model_definitions[model]['fields'].get(field, field))
+                fields = dict((field, self.model_definitions[model]['fields'].get(field, field))
                         for field in fields)
 
         self._prepare_blob()
@@ -133,15 +149,15 @@ class Reader(six.with_metaclass(abc.ABCMeta, object)):
         except KeyError as e:
             raise ReaderException('The json structure must contain a model (%s)' % (e, ))
 
-        if model == '__default__' or model not in ModelParser.model_definitions:
+        if model == '__default__' or model not in self.model_definitions:
             self.json['__meta_metadata__']['__continuable_errors__']\
                     .append("Warning - Using 'default' model for 'add', given model: '%s'" % (model, ))
             json_id = field
         else:
-            json_id = ModelParser.model_definitions[model]['fields'].get(field, field)
+            json_id = self.model_definitions[model]['fields'].get(field, field)
 
         try:
-            rule = FieldParser.field_definitions[json_id]
+            rule = self.field_definitions[json_id]
         except KeyError:
             rule = {}
             self.json['__meta_metadata__']['__continuable_errors__']\
@@ -183,20 +199,20 @@ class Reader(six.with_metaclass(abc.ABCMeta, object)):
 
         if not fields:
             fields = dict(zip(json.keys(), json.keys()))
-            if model == '__default__' or model not in ModelParser.model_definitions:
+            if model == '__default__' or model not in self.model_definitions:
                 json['__meta_metadata__']['__continuable_errors__']\
                     .append("Warning - Using 'default' model for 'update', given model: '%s'" % (model, ))
             else:
-                fields = dict(fields, **ModelParser.model_definitions[model]['fields'])
+                fields = dict(fields, **self.model_definitions[model]['fields'])
         elif not isinstance(fields, dict):
             if isinstance(fields, six.string_types):
                 fields = (fields, )
-            if model == '__default__' or model not in ModelParser.model_definitions:
+            if model == '__default__' or model not in self.model_definitions:
                 json['__meta_metadata__']['__continuable_errors__']\
                     .append("Warning - Using 'default' model for 'update', given model: '%s'" % (model, ))
                 fields = dict(zip(fields, fields))
             else:
-                fields = dict((field, ModelParser.model_definitions[model]['fields'].get(field, field))
+                fields = dict((field, self.model_definitions[model]['fields'].get(field, field))
                         for field in fields)
 
 #         for key in fields.keys():
@@ -227,17 +243,17 @@ class Reader(six.with_metaclass(abc.ABCMeta, object)):
     def _unpack_rule(self, json_id, field_name=None):
         """From the field definitions extract the rules an tries to apply them"""
         try:
-            rule_def = FieldParser.field_definitions[json_id]
+            rule_def = self.field_definitions[json_id]
         except KeyError as e:
             self.json['__meta_metadata__']['__continuable_errors__'].append("Error - Unable to find '%s' field definition" % (json_id, ))
             return False
 
         if not field_name:
             model = self.json['__meta_metadata__']['__additional_info__']['model']
-            if model == '__default__' or model not in ModelParser.model_definitions:
+            if model == '__default__' or model not in self.model_definitions:
                 field_name = json_id
             else:
-                field_name = ModelParser.model_definitions[model].get(json_id, json_id)
+                field_name = self.model_definitions[model].get(json_id, json_id)
 
         # Undo the workaround for [0] and [n]
         if isinstance(rule_def, list):
@@ -264,7 +280,7 @@ class Reader(six.with_metaclass(abc.ABCMeta, object)):
                 return False
             if 'entire_record' in rule['source_tag'] or '*' in rule['source_tag']:
                 try:
-                    value = try_to_eval(rule['value'], functions, value=elements, self=self.json)
+                    value = try_to_eval(rule['value'], self.functions, value=elements, self=self.json)
                     info = self._find_meta_metadata(json_id, field_name, 'creator', rule, rule_def)
                     if 'json_ext' in rule_def:
                         value = rule_def['json_ext']['dumps'](value)
@@ -283,11 +299,11 @@ class Reader(six.with_metaclass(abc.ABCMeta, object)):
                     applied = False
                     for e in element:
                         if rule['only_if_master_value'] and \
-                           not all(try_to_eval(rule['only_if_master_value'], functions, value=e, self=self.json)):
+                           not all(try_to_eval(rule['only_if_master_value'], self.functions, value=e, self=self.json)):
                             applied = applied or False
                         else:
                             try:
-                                value = try_to_eval(rule['value'], functions, value=e, self=self.json)
+                                value = try_to_eval(rule['value'], self.functions, value=e, self=self.json)
                                 info = self._find_meta_metadata(json_id, field_name, 'creator', rule, rule_def)
                                 if 'json_ext' in rule_def:
                                     value = rule_def['json_ext']['dumps'](value)
@@ -315,7 +331,7 @@ class Reader(six.with_metaclass(abc.ABCMeta, object)):
                 try:
                     info = self._find_meta_metadata(json_id, field_name, rule_type, rule, rule_def)
                     if rule_type == 'derived' or rule['memoize']:
-                        value = try_to_eval(rule['value'], functions, self=self.json)
+                        value = try_to_eval(rule['value'], self.functions, self=self.json)
                         if 'json_ext' in rule_def:
                             value = rule_def['json_ext']['dumps'](value)
                     else:
@@ -323,7 +339,7 @@ class Reader(six.with_metaclass(abc.ABCMeta, object)):
 
                     self.json.set(field_name, value, extend=True)
                     self.json['__meta_metadata__.%s' % (SmartDict.main_key_pattern.sub('', field_name), )] = info
-                except Exception, e:
+                except Exception as e:
                     self.json['__meta_metadata__']['__continuable_errors__']\
                             .append('Virtual Rule CError - Unable to evaluate %s - %s' % (field_name, str(e)))
                     return False
@@ -343,7 +359,7 @@ class Reader(six.with_metaclass(abc.ABCMeta, object)):
                 main_key = SmartDict.main_key_pattern.sub('', key)
                 if not self._unpack_rule(main_key):
                     return False
-        if rule['only_if'] and not all(try_to_eval(rule['only_if'], functions, self=self.json)):
+        if rule['only_if'] and not all(try_to_eval(rule['only_if'], self.functions, self=self.json)):
             return False
         return True
 
@@ -353,7 +369,7 @@ class Reader(six.with_metaclass(abc.ABCMeta, object)):
             self.json['__meta_metadata__.__aliases__.%s' % (alias, )] = field_name
         info = {}
         info['timestamp'] = datetime.datetime.now().isoformat()
-        if rule_def.get('persistent_identifier', None):
+        if rule_def.get('persistent_identifier', None) is not None:
             info['pid'] = rule_def['persistent_identifier']
         info['memoize'] = rule.get('memoize', None)
         info['type'] = rule_type
@@ -377,12 +393,12 @@ class Reader(six.with_metaclass(abc.ABCMeta, object)):
 
         :return: tuple containing if the value is required and the default value.
         """
-        schema = FieldParser.field_definitions[json_id].get('schema', {}).get(json_id)
+        schema = self.field_definitions[json_id].get('schema', {}).get(json_id)
         if schema and 'default' in schema:
             try:
                 value = schema['default']()
                 try:
-                    value = FieldParser.field_definitions[json_id]['json_ext']['dumps'](value)
+                    value = self.field_definitions[json_id]['json_ext']['dumps'](value)
                 except KeyError:
                     pass
                 self.json.set(field_name, value, extend=True)

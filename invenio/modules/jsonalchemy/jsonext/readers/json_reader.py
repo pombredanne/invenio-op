@@ -56,10 +56,12 @@ class JsonReader(Reader):
 
     def _apply_rules(self, json_id, field_name, rule_def):
         try:
-            info = self._find_meta_metadata(json_id, field_name, 'creator', {}, rule_def)
-            if 'json_ext' in rule_def:
+            info = self._find_meta_metadata(json_id, field_name, 'creator', {'source_tag':json_id}, rule_def)
+            if 'json_ext' in rule_def and field_name in self.json:
                 self.json[field_name] = rule_def['json_ext']['dumps'](self.json[field_name])
             self.json['__meta_metadata__.%s' % (field_name, )] = info
+        except KeyError:
+            self._set_default_value(json_id, field_name)
         except Exception, e:
             self.json['__meta_metadata__']['__errors__']\
                     .append('Rule Error - Unable to apply rule for field %s - %s' % (field_name, str(e)),)

@@ -99,7 +99,7 @@ class LaziestDict(LazyDict):
 
     def reader_discover(key):
         from werkzeug.utils import import_string
-        return import_string('invenio.legacy.bibfield.%sreader:reader' % (key))
+        return import_string('invenio.jsonalchemy.jsonext.readers%sreader:reader' % (key))
 
     laziest_dict = LaziestDict(reader_discover)
 
@@ -326,8 +326,8 @@ class SmartDict(object):
     def set(self, key, value, extend=False):
         self.__setitem__(key, value, extend)
 
-    def update(self, new):
-        self._dict.update(new)
+    def update(self, E, **F):
+        self._dict.update(E, **F)
 
 
 def flatten_multidict(multidict):

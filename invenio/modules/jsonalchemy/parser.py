@@ -52,7 +52,7 @@ list_def = originalTextFor(nestedExpr('[', ']'))
 dict_access = list_access = originalTextFor(ident + nestedExpr('[', ']'))
 function_call = originalTextFor(ZeroOrMore(ident + ".") + ident + nestedExpr('(', ')'))
 
-python_allowed_expr = (ident ^ dict_def ^ list_def ^ dict_access ^ \
+python_allowed_expr = (dict_def ^ list_def ^ dict_access ^ \
         list_access ^ function_call ^ restOfLine)\
         .setResultsName("value", listAllMatches=True)
 
@@ -221,15 +221,6 @@ def _create_record_model_parser():
     return OneOrMore(comment | Each([fields, ] + \
             [Optional(p.parser.parse_element(indent_stack)) for p in parsers]))
 
-#FIXME: this should go outside 
-#####################################################################
-class classproperty(object):
-    def __init__(self, getter, setter=None):
-        self.getter = getter
-
-    def __get__(self, instance, owner):
-        return self.getter(owner)
-
 
 class FieldParser(object):
     """Field definitions parser"""
@@ -240,32 +231,33 @@ class FieldParser(object):
     _legacy_field_matchings = {}
     """Dictionary containing matching between the legacy master format and the current json"""
 
-    def __init__(self):
-        self.files = list(fields_definitions)
+    def __init__(self, namespace):
+        self.files = list(fields_definitions(namespace))
+        self.__namespace = namespace
         self.__inherit_rules = []
         self.__unresolved_inheritence = []
         self.__override_rules = []
         self.__extend_rules = []
 
-    @classproperty
-    def field_definitions(cls):
-        if not cls._field_definitions:
-            cls()._create()
-        return cls._field_definitions
+    @classmethod
+    def field_definitions(cls, namespace):
+        if namespace not in cls._field_definitions:
+            cls.reparse(namespace)
+        return cls._field_definitions.get(namespace)
 
-    @classproperty
-    def legacy_field_matchings(cls):
-        if not cls._legacy_field_matchings:
-            cls()._create()
+    @classmethod
+    def legacy_field_matchings(cls, namespace):
+        if namespace not in cls._legacy_field_matchings:
+            cls.reparse(namespace)
         return cls._legacy_field_matchings
 
     @classmethod
-    def reparse(cls):
-        cls._field_definitions = {}
+    def reparse(cls, namespace):
+        cls._field_definitions[namespace] = {}
         cls._legacy_field_matchings = {}
-        cls()._create()
+        cls(namespace)._create()
         # It invalidates the Model definitions too as they relay on the field definitions
-        ModelParser.reparse()
+        ModelParser.reparse(namespace)
 
     def _create(self):
         """
@@ -335,10 +327,10 @@ class FieldParser(object):
         """
         json_id = rule.json_id[0]
         #Chech duplicate names
-        if json_id in self.__class__._field_definitions and not override and not extend:
+        if json_id in self.__class__._field_definitions[self.__namespace] and not override and not extend:
             raise FieldParserException("Name error: '%s' field name already defined"
                                     % (rule.json_id[0],))
-        if not json_id in self.__class__._field_definitions and (override or extend):
+        if not json_id in self.__class__._field_definitions[self.__namespace] and (override or extend):
             raise FieldParserException("Name error: '%s' field name not defined"
                                     % (rule.json_id[0],))
 
@@ -347,9 +339,9 @@ class FieldParser(object):
         #the full one i.e.: 'authors' : ['authors[0]', 'authors[n]']
         if '[0]' in json_id or '[n]' in json_id:
             main_json_id = re.sub('(\[n\]|\[0\])', '', json_id)
-            if not main_json_id in self.__class__._field_definitions:
-                self.__class__._field_definitions[main_json_id] = []
-            self.__class__._field_definitions[main_json_id].append(json_id)
+            if not main_json_id in self.__class__._field_definitions[self.__namespace]:
+                self.__class__._field_definitions[self.__namespace][main_json_id] = []
+            self.__class__._field_definitions[self.__namespace][main_json_id].append(json_id)
 
         aliases = []
         if rule.aliases:
@@ -365,7 +357,7 @@ class FieldParser(object):
             inherit_from = eval(rule.inherit_from[0])
 
         if extend:
-            rules = self.__class__._field_definitions[json_id]['rules']
+            rules = self.__class__._field_definitions[self.__namespace][json_id]['rules']
         else:
             rules = {}
 
@@ -399,23 +391,23 @@ class FieldParser(object):
                                   'only_if'             : only_if,
                                   'only_if_master_value': only_if_master_value,
                                   'memoize'             : memoize,
-                                  'value'               : compile(r.value[0], '', 'eval'),
+                                  'value'               : compile(r.value[0].strip(), '', 'eval'),
                                  })
 
         if override:
-            self.__class__._field_definitions[json_id]['override'] = override
-            self.__class__._field_definitions[json_id]['rules'].update(rules)
-            self.__class__._field_definitions[json_id]['aliases'] = \
-                    aliases or self.__class__._field_definitions[json_id]['aliases']
-            self.__class__._field_definitions[json_id]['persistent_identifier'] = \
-                    persistent_id or self.__class__._field_definitions[json_id]['persistent_identifier']
-            self.__class__._field_definitions[json_id]['inherit_from'] = \
-                    inherit_from or self.__class__._field_definitions[json_id]['inherit_from']
+            self.__class__._field_definitions[self.__namespace][json_id]['override'] = override
+            self.__class__._field_definitions[self.__namespace][json_id]['rules'].update(rules)
+            self.__class__._field_definitions[self.__namespace][json_id]['aliases'] = \
+                    aliases or self.__class__._field_definitions[self.__namespace][json_id]['aliases']
+            self.__class__._field_definitions[self.__namespace][json_id]['persistent_identifier'] = \
+                    persistent_id or self.__class__._field_definitions[self.__namespace][json_id]['persistent_identifier']
+            self.__class__._field_definitions[self.__namespace][json_id]['inherit_from'] = \
+                    inherit_from or self.__class__._field_definitions[self.__namespace][json_id]['inherit_from']
         elif extend:
-            self.__class__._field_definitions[json_id]['extend'] = extend
-            self.__class__._field_definitions[json_id]['aliases'].extend(aliases)
+            self.__class__._field_definitions[self.__namespace][json_id]['extend'] = extend
+            self.__class__._field_definitions[self.__namespace][json_id]['aliases'].extend(aliases)
         else:
-            self.__class__._field_definitions[json_id] = {'inherit_from'  : inherit_from,
+            self.__class__._field_definitions[self.__namespace][json_id] = {'inherit_from'  : inherit_from,
                                                'rules'         : rules,
                                                'aliases'       : aliases,
                                                'persistent_identifier': persistent_id,
@@ -468,11 +460,11 @@ class FieldParser(object):
         rule
         """
         json_id = rule.json_id[0]
-        assert json_id in self.__class__._field_definitions
+        assert json_id in self.__class__._field_definitions[self.__namespace]
         for parser_extension in parsers:
             if getattr(rule, parser_extension.parser.__name__, None):
-                self.__class__._field_definitions[json_id][parser_extension.parser.__name__] = \
-                        parser_extension.parser.create_element(rule)
+                self.__class__._field_definitions[self.__namespace][json_id][parser_extension.parser.__name__] = \
+                        parser_extension.parser.create_element(rule, self.__namespace)
 
     #FIXME: it might be nice to have the decorators also extendibles
     def __create_decorators_content(self, rule):
@@ -503,18 +495,18 @@ class FieldParser(object):
         creation to avoid problem when creating this rules.
         """
         def resolve_inheritance(json_id):
-            rule = self.__class__._field_definitions[json_id]
-            inherit_from_list = self.__class__._field_definitions[json_id]['inherit_from']
+            rule = self.__class__._field_definitions[self.__namespace][json_id]
+            inherit_from_list = self.__class__._field_definitions[self.__namespace][json_id]['inherit_from']
             for inherit_json_id in inherit_from_list:
                 #Check if everithing is fine
                 if inherit_json_id == json_id:
                     raise FieldParserException("Inheritance from itself")
-                if inherit_json_id not in self.__class__._field_definitions:
+                if inherit_json_id not in self.__class__._field_definitions[self.__namespace]:
                     raise FieldParserException("Unable to solve %s inheritance" % (inherit_json_id,))
                 if inherit_json_id in self.__unresolved_inheritence:
                     self._resolve_inheritance(inherit_json_id)
                     self.__unresolved_inheritence.remove(inherit_json_id)
-                inherit_rule = self.__class__._field_definitions[inherit_json_id]
+                inherit_rule = self.__class__._field_definitions[self.__namespace][inherit_json_id]
                 for format in inherit_rule['rules']:
                     if not format in rule['rules']:
                         rule['rules'][format] = []
@@ -553,20 +545,21 @@ class ModelParser(object):
     _model_definitions = {}
     """ """
 
-    def __init__(self):
+    def __init__(self, namespace):
         #Autodiscover .cfg files
-        self.files = list(models_definitions)
-
-    @classproperty
-    def model_definitions(cls):
-        if not cls._model_definitions:
-            cls()._create()
-        return cls._model_definitions
+        self.files = list(models_definitions(namespace))
+        self.__namespace = namespace
 
     @classmethod
-    def reparse(cls):
-        cls._model_definitions = {}
-        cls()._create()
+    def model_definitions(cls, namespace):
+        if namespace not in cls._model_definitions:
+            cls.reparse(namespace)
+        return cls._model_definitions.get(namespace)
+
+    @classmethod
+    def reparse(cls, namespace):
+        cls._model_definitions[namespace] = {}
+        cls(namespace)._create()
 
     def _create(self):
         """
@@ -596,9 +589,9 @@ class ModelParser(object):
         for model_file in self.files:
             parser = _create_record_model_parser()
             model_name = os.path.basename(model_file).split('.')[0]
-            if model_name in self.__class__._model_definitions:
+            if model_name in self.__class__._model_definitions[self.__namespace]:
                 raise ModelParserException("Already defined record model: %s" % (model_name,))
-            self.__class__._model_definitions[model_name] = {'fields': {},
+            self.__class__._model_definitions[self.__namespace][model_name] = {'fields': {},
                                                              'super': [],
                                                             }
             model_definition = parser.parseFile(model_file, parseAll=True)
@@ -607,7 +600,7 @@ class ModelParser(object):
                 raise ModelParserException("Field definition needed")
             for field_def in model_definition.fields[0]:
                 if field_def.inherit_from:
-                    self.__class__._model_definitions[model_name]['super'].extend(eval(field_def[0]))
+                    self.__class__._model_definitions[self.__namespace][model_name]['super'].extend(eval(field_def[0]))
                 else:
                     if len(field_def) == 1:
                         json_id = field_def[0]
@@ -615,14 +608,14 @@ class ModelParser(object):
                     else:
                         field_name = field_def[0]
                         json_id = field_def[1]
-                    if not json_id in FieldParser.field_definitions:
+                    if not json_id in FieldParser.field_definitions(self.__namespace):
                         raise ModelParserException("Unknown field name: %s" % (json_id,))
 
-                    self.__class__._model_definitions[model_name]['fields'][field_name] = json_id
+                    self.__class__._model_definitions[self.__namespace][model_name]['fields'][field_name] = json_id
 
             self.__resolve_parser_extensions(model_name, model_definition)
 
-        for model, model_definition in self.__class__._model_definitions.items():
+        for model, model_definition in self.__class__._model_definitions[self.__namespace].items():
             model_definition['fields'] = self.__resolve_inheritance(model)
 
     def __resolve_inheritance(self, model):
@@ -636,7 +629,7 @@ class ModelParser(object):
         :raises: ModelParserException if the super model does not exist.
         """
         try:
-            model_definition = self.__class__._model_definitions[model]
+            model_definition = self.__class__._model_definitions[self.__namespace][model]
         except KeyError:
             raise ModelParserException("Missing model definition for %s" % (model,))
         fields = {}
@@ -650,13 +643,13 @@ class ModelParser(object):
         For each of the extension available it tries to apply it in the incoming
         rule
         """
-        assert model_name in self.__class__._model_definitions
+        assert model_name in self.__class__._model_definitions[self.__namespace]
         for parser_extension in parsers:
             if getattr(model_def, parser_extension.parser.__name__, None):
-                self.__class__._model_definitions[model_name][parser_extension.parser.__name__] = \
-                        parser_extension.parser.create_element(model_def)
+                self.__class__._model_definitions[self.__namespace][model_name][parser_extension.parser.__name__] = \
+                        parser_extension.parser.create_element(model_def, self.__namespace)
 
-def guess_legacy_field_names(fields, master_format='marc'):
+def guess_legacy_field_names(fields, master_format, namespace):
     """
     Using the legacy rules written in the config file (@legacy) tries to find
     the equivalent json field for one or more legacy fields.
@@ -669,24 +662,24 @@ def guess_legacy_field_names(fields, master_format='marc'):
         fields = (fields, )
     for field in fields:
         try:
-            res[field] = FieldParser.legacy_field_matchings[master_format].get(field, [])
+            res[field] = FieldParser.legacy_field_matchings(namespace)[master_format].get(field, [])
         except:
             res[field] = []
     return res
 
-def get_producer_rules(field, code):
+def get_producer_rules(field, code, namespace):
     """docstring for get_producer_rules"""
 
-    rule = FieldParser.field_definitions[field]
+    rule = FieldParser.field_definitions(namespace)[field]
     if isinstance(rule, list):
         if len(rule) == 1:
             # case field[n]
-            return [(rule[0].replace('[n]', ''), FieldParser.field_definitions[rule[0]]['producer'].get(code, {}))]
+            return [(rule[0].replace('[n]', ''), FieldParser.field_definitions(namespace)[rule[0]]['producer'].get(code, {}))]
         else:
             # case field[1], field[n]
             rules = []
             for new_field in rule:
-                rules.append((new_field.replace('[n]', '[1:]'), FieldParser.field_definitions[new_field]['producer'].get(code, {})))
+                rules.append((new_field.replace('[n]', '[1:]'), FieldParser.field_definitions(namespace)[new_field]['producer'].get(code, {})))
             return rules
     else:
         return [(field, rule['producer'].get(code, {}))]
@@ -706,7 +699,7 @@ class BaseExtensionParser(six.with_metaclass(abc.ABCMeta, object)):
 
     @classmethod
     @abc.abstractmethod
-    def create_element(cls, rule):
+    def create_element(cls, rule, namespace):
         """
         Once the extension is parsed defines the actions that have to be taken
         to store inside the field_definitions the information needed or useful.

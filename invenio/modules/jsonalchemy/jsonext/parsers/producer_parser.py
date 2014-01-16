@@ -43,9 +43,9 @@ class ProducerParser(BaseExtensionParser):
                 .setResultsName('producer')
 
     @classmethod
-    def create_element(cls, rule):
+    def create_element(cls, rule, namespace):
         json_id = rule.json_id[0]
-        assert json_id in FieldParser.field_definitions
+        assert json_id in FieldParser.field_definitions(namespace)
 
         producers = {}
         for producer in rule.producer:
