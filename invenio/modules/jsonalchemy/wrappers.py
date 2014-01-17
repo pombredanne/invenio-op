@@ -92,10 +92,6 @@ class SmartJson(six.with_metaclass(abc.ABCMeta, SmartDict)):
             yield (key, self[key])
 
     @property
-    def model(self):
-        return self['__meta_metadata__']['__additional_info__']['model']
-
-    @property
     def validation_errors(self):
         if self._validator is None:
             self.validate()
@@ -121,8 +117,31 @@ class SmartJson(six.with_metaclass(abc.ABCMeta, SmartDict)):
         return producers[output](self, fields=fields)
 
     def validate(self):
+
+        def find_schema(json_id):
+            schema = FieldParser.field_definitions(self['__meta_metadata__']['__additional_info__']['namespace']).get(json_id, {})
+            if isinstance(schema, list):
+                for jjson_id in schema:
+                    yield FieldParser.field_definitions(self['__meta_metadata__']['__additional_info__']['namespace']).get(jjson_id, {}).get('schema', {})
+                raise StopIteration()
+            yield schema.get('schema', {})
+
         if self._validator is None:
-            self._validator = Validator()
+            schema = {}
+            model_fields = ModelParser.model_definitions(self['__meta_metadata__']['__additional_info__']['namespace']).get(fields, {})
+            if model_fields:
+                for field in self.document.keys():
+                    if field not in model_fields:
+                        model_fields[field] = field
+                model_field = [json_id for json_id in model_fields.values()]
+            else:
+                model_fields = self.document.keys()
+
+            for json_id in model_fields:
+                for schema in find_schema(json_id):
+                    self.schema.update(schema)
+            self._validator = Validator(schema=shema)
+
         return self._validator.validate(self)
 
     def _dumps(self, field):
@@ -130,7 +149,7 @@ class SmartJson(six.with_metaclass(abc.ABCMeta, SmartDict)):
         try:
             self._dict[field] = reduce(lambda obj, key: obj[key], \
                     self._dict['__meta_metadata__'][field]['dumps'], \
-                    FieldParser.field_definitions)(self._dict_bson[field])
+                    FieldParser.field_definitions(self['__meta_metadata__']['__additional_info__']['namespace']))(self._dict_bson[field])
         except (KeyError, IndexError):
             if self['__meta_metadata__'][field]['memoize'] or \
                     self['__meta_metadata__'][field]['type'] in ('derived', 'creator', 'UNKNOW'):
@@ -141,7 +160,7 @@ class SmartJson(six.with_metaclass(abc.ABCMeta, SmartDict)):
         try:
             self._dict_bson[field] = reduce(lambda obj, key: obj[key], \
                     self._dict['__meta_metadata__'][field]['loads'], \
-                    FieldParser.field_definitions)(self._dict[field])
+                    FieldParser.field_definition(self['__meta_metadata__']['__additional_info__']['namespace']))(self._dict[field])
         except (KeyError, IndexError):
             self._dict_bson[field] = self._dict[field]
 
@@ -152,7 +171,7 @@ class SmartJson(six.with_metaclass(abc.ABCMeta, SmartDict)):
         if self._dict['__meta_metadata__'][field]['memoize'] is None:
             func = reduce(lambda obj, key: obj[key], \
                     self._dict['__meta_metadata__'][field]['function'], \
-                    FieldParser.field_definitions)
+                    FieldParser.field_definitions(self['__meta_metadata__']['__additional_info__']['namespace']))
             self._dict_bson[field] = try_to_eval(func, functions, self=self)
         else:
             live_time = datetime.timedelta(0, self._dict['__meta_metadata__'][field]['memoize'])
@@ -161,7 +180,7 @@ class SmartJson(six.with_metaclass(abc.ABCMeta, SmartDict)):
                 old_value = self._dict_bson[field]
                 func = reduce(lambda obj, key: obj[key], \
                     self._dict['__meta_metadata__'][field]['function'], \
-                    FieldParser.field_definitions)
+                    FieldParser.field_definitions(self['__meta_metadata__']['__additional_info__']['namespace']))
                 self._dict_bson[field] = try_to_eval(func, functions, self=self)
                 if not old_value == self._dict_bson[field]:
                     #FIXME: trigger update in DB and fire signal to update others

@@ -42,22 +42,21 @@ class Validator(ValidatorBase):
                ignore_none_values, allow_unknown)
 
     def _validate(self, document, schema=None, update=False):
-
         self._errors = {}
         self.update = update
+
+        if schema is not None:
+            self.schema = schema
+        elif self.schema is None:
+            raise SchemaError(errors.ERROR_SCHEMA_MISSING)
+        if not isinstance(self.schema, dict):
+            raise SchemaError(errors.ERROR_SCHEMA_FORMAT % str(self.schema))
 
         if document is None:
             raise ValidationError(errors.ERROR_DOCUMENT_MISSING)
         if not hasattr(document, 'get'):
             raise ValidationError(errors.ERROR_DOCUMENT_FORMAT % str(document))
         self.document = document
-
-        if schema is not None:
-            self.schema = schema
-        elif self.schema is None:
-            self._find_schema()
-        if not isinstance(self.schema, dict):
-            raise SchemaError(errors.ERROR_SCHEMA_FORMAT % str(self.schema))
 
         special_rules = ["required", "nullable", "type"]
         for field, value in self.document.items():
@@ -109,28 +108,3 @@ class Validator(ValidatorBase):
        """
        if not re.match('[a-f0-9]{24}', value):
            self._error(field, ERROR_BAD_TYPE % 'ObjectId')
-
-    def _find_schema(self):
-
-        def find_schema(json_id):
-            schema = FieldParser.field_definitions.get(json_id, {})
-            if isinstance(schema, list):
-                for jjson_id in schema:
-                    yield FieldParser.field_definitions.get(jjson_id, {}).get('schema', {})
-                raise StopIteration()
-            yield schema.get('schema', {})
-
-        self.schema = {}
-        model_fields = ModelParser.model_definitions.get(self.document.model, {}).get('fields')
-        if model_fields:
-            for field in self.document.keys():
-                if field not in model_fields:
-                    model_fields[field] = field
-            model_field = [json_id for json_id in model_fields.values()]
-        else:
-            model_fields = self.document.keys()
-
-        for json_id in model_fields:
-            for schema in find_schema(json_id):
-                self.schema.update(schema)
-
