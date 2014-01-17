@@ -28,9 +28,7 @@
 
     Extensions to both parsers could be added inside jsonext.parsers
 """
-import abc
 import os
-import six
 import re
 
 from pyparsing import ParseException, FollowedBy, Suppress, OneOrMore, Word, \
@@ -685,10 +683,9 @@ def get_producer_rules(field, code, namespace):
         return [(field, rule['producer'].get(code, {}))]
 
 #pylint: disable=R0921
-class BaseExtensionParser(six.with_metaclass(abc.ABCMeta, object)):
+class BaseExtensionParser(object):
     """Base class for the configuration file extensions"""
     @classmethod
-    @abc.abstractmethod
     def parse_element(cls, indent_stack):
         """
         Using pyparsing defines a piece of the grammar to parse the
@@ -696,9 +693,9 @@ class BaseExtensionParser(six.with_metaclass(abc.ABCMeta, object)):
 
         :return: pyparsing ParseElement
         """
+        raise NotImplemented
 
     @classmethod
-    @abc.abstractmethod
     def create_element(cls, rule, namespace):
         """
         Once the extension is parsed defines the actions that have to be taken
@@ -706,11 +703,12 @@ class BaseExtensionParser(six.with_metaclass(abc.ABCMeta, object)):
 
         :return: content of the key cls.__name__ inside the field_definitions
         """
+        raise NotImplemented
 
     @classmethod
     def add_info_to_field(cls, json_id, info):
         """
-        Optional method to define which information goes inside the 
+        Optional method to define which information goes inside the
         __meta_metadata__ dictionary and how.
 
         :return: dictionary to update the existing one inside __meta_metadata__

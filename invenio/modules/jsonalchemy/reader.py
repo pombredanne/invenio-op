@@ -24,7 +24,6 @@
     Default reader, it could be considered as an interface to be implemented by
     the other readers.
 """
-import abc
 import datetime
 import six
 
@@ -36,7 +35,7 @@ from .parser import FieldParser, ModelParser
 from .registry import functions, parsers
 
 
-class Reader(six.with_metaclass(abc.ABCMeta, object)):
+class Reader(object):
     """Default reader"""
 
     def __init__(self, blob=None, **kwargs):
@@ -225,19 +224,19 @@ class Reader(six.with_metaclass(abc.ABCMeta, object)):
         """docstring for validate"""
         pass
 
-    @abc.abstractmethod
     def _prepare_blob(self, *args, **kwargs):
         """
         Responsible of doing any kind of transformation over the blob before the
         translation begins
         """
+        raise NotImplemented
 
-    @abc.abstractmethod
     def _get_elements_from_blob(self, regex_key):
         """
         Should handle 'entire_record' and '*'
         Not an iterator!
         """
+        raise NotImplemented
 
 
     def _unpack_rule(self, json_id, field_name=None):
