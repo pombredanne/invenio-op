@@ -23,6 +23,8 @@
 
 """
 
+from sqlalchemy.orm.exc import NoResultFound
+
 from invenio.modules.jsonalchemy.jsonext.engines.sqlalchemy import SQLAlchemyStorage
 from invenio.modules.jsonalchemy.registry import readers
 from invenio.modules.jsonalchemy.wrappers import SmartJson
@@ -48,7 +50,7 @@ class Record(SmartJson):
         try:
             json = cls.storage_engine.get_one(recid)
             return Record(json)
-        except:
+        except NoResultFound:
             # try to retrieve the record from the master format if any
             # this might be deprecated in the near future as soon as json will
             # become the master format, until then ...
@@ -57,7 +59,7 @@ class Record(SmartJson):
             if record_model is None or blob is None:
                 return None
             additional_info = record_model.additional_info if record_model.additional_info else dict()
-            record = cls.create(blob, **additional_info)
+            record = cls.create(blob, record_model.master_format, **additional_info)
             record._save()
             return record
 
