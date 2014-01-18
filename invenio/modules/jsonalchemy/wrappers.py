@@ -21,7 +21,6 @@
     invenio.modules.jsonalchemy.wrapper
     -----------------------------------
 """
-import abc
 import datetime
 import six
 
@@ -34,7 +33,8 @@ from .parser import FieldParser, ModelParser
 from .registry import functions, readers, producers
 from .validator import Validator
 
-class SmartJson(six.with_metaclass(abc.ABCMeta, SmartDict)):
+
+class SmartJson(SmartDict):
     """Base class for Json structures"""
 
     def __init__(self, json):

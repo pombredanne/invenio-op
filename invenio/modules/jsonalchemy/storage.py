@@ -24,54 +24,50 @@
     Json storage engine interface
 """
 
-import abc
-import six
 
-class Storage(six.with_metaclass(abc.ABCMeta, object)):
+class Storage(object):
     """Default storage engine interface"""
 
     #TODO: set return values on success and error and setup a log function
     #TODO: create a query class to mimic SQLAlchemy query object
 
-    @abc.abstractmethod
     def __init__(self, model, **kargs):
         """
         :param: model:
         """
+        raise NotImplemented
 
-    @abc.abstractmethod
     def save_one(self, json, id=None):
         """Stores one json in the storage system"""
 
-    @abc.abstractmethod
     def save_many(self, jsons, ids=None):
         """
         Stores many json in the storage system, as elements on the
         iterable jsons.
         """
+        raise NotImplemented
 
-    @abc.abstractmethod
     def update_one(self, json, id=None):
         """
         Updates one json , if id is None a field representing the id is
         expected inside the json object.
         """
+        raise NotImplemented
 
-    @abc.abstractmethod
     def update_many(self, jsons, ids=None):
         """Update many json objects following the same rule as update_one"""
+        raise NotImplemented
 
-    @abc.abstractmethod
     def get_one(self, id):
         """Returns the json matching the id"""
+        raise NotImplemented
 
-    @abc.abstractmethod
     def get_many(self, ids):
         """Returns an iterable of json objects which id is inside ids"""
+        raise NotImplemented
 
-    @abc.abstractmethod
     def get_field_values(ids, field, repetitive_values=True, count=False,
-            include_recid=False, split_by=0):
+                         include_recid=False, split_by=0):
         """
         Returns a list of field values for field for the given ids.
 
@@ -82,16 +78,16 @@ class Storage(six.with_metaclass(abc.ABCMeta, object)):
         result the number of occurrences of the field.
         :param split: specifies the size of the output.
         """
+        raise NotImplemented
 
-    @abc.abstractmethod
     def get_fields_values(ids, fields, repetitive_values=True, count=False,
-            include_recid=False, split_by=0):
+                          include_recid=False, split_by=0):
         """
-        As in :meth:`get_field_values` but in this case returns a dictionary with each
-        of the fields and the list of field values.
+        As in :meth:`get_field_values` but in this case returns a dictionary
+        with each of the fields and the list of field values.
         """
+        raise NotImplemented
 
-    @abc.abstractmethod
     def search(query):
         """
         Retrieves all entries which match the query JSON prototype document.
@@ -99,3 +95,4 @@ class Storage(six.with_metaclass(abc.ABCMeta, object)):
         support (e.g., MySQL). Returns a cursor over the matched documents.
         :param query: dictionary specifying the search prototype document
         """
+        raise NotImplemented
