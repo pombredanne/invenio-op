@@ -190,8 +190,9 @@ your httpd.conf:\n
 %s
 
 Please see the INSTALL file for more details.
-    """ % '\n'.join(tuple(map(lambda x: "Include " + apache_conf_dir.encode('utf-8') + os.sep,
-                    list(conf_files[:1 if no_ssl else 2])))))
+    """ % '\n\n'.join(tuple(map(
+        lambda x: "Include " + apache_conf_dir.encode('utf-8') + os.sep + x,
+        list(conf_files[:1 if no_ssl else 2])))))
     print ">>> Apache conf files created."
 
 
