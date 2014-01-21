@@ -510,7 +510,7 @@ def wrap_warn():
                 'message': message,
                 'file': filename,
                 'line': lineno} + "** Traceback details\n" +
-                traceback.format_stack() + "\n")
+                str(traceback.format_stack()) + "\n")
         return new_showwarning
 
     warnings.showwarning = wrapper(warnings.showwarning)
