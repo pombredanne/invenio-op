@@ -924,7 +924,7 @@ def _task_run(task_run_fnc):
     ## We prepare the pid file inside /prefix/var/run/taskname_id.pid
     check_running_process_user()
     try:
-        CFG_BIBTASK_RUN_DIR = os.path.join(current_app.instance_folder, 'run')
+        CFG_BIBTASK_RUN_DIR = os.path.join(current_app.instance_path, 'run')
         if not os.path.exists(CFG_BIBTASK_RUN_DIR):
             os.mkdir(CFG_BIBTASK_RUN_DIR)
         pidfile_name = os.path.join(CFG_BIBTASK_RUN_DIR,
