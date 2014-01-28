@@ -18,7 +18,7 @@
 #}
 {% if breadcrumbs|length > 1 %}
 <div class="container">
-  <ul class="breadcrumb">
+  <ul class="breadcrumb" itemprop="breadcrumb">
     {% for breadcrumb in breadcrumbs %}
     {% if loop.last %}
     <li class="active">

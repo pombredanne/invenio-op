@@ -16,29 +16,25 @@
 ## along with Invenio; if not, write to the Free Software Foundation, Inc.,
 ## 59 Temple Place, Suite 330, Boston, MA 02111-1307, USA.
 #}
-{% from "_formhelpers.html" import render_filter_form with context %}
-{% from "search/helpers.html" import collection_tree, portalbox_sidebar, search_also, search_form, search_form_javascript  with context %}
-{% extends "page.html" %}
+{%- from "_formhelpers.html" import render_filter_form with context %}
+{%- from "search/helpers.html" import collection_tree, portalbox_sidebar, search_also, search_form, search_form_javascript  with context %}
+{%- extends "page.html" %}
 {# set title = collection.name_ln if collection.id > 1 else None #}
 {% set title = None %}
-
 {%- set portalboxes = dict() -%}
 {%- for k,l in collection.portalboxes_ln|groupby('position') -%}
   {%- do portalboxes.update({k:l}) -%}
 {%- endfor -%}
-
-{% block header %}
+{%- block header -%}
   {{ super() }}
-  {% js url_for('search.static', filename='js/search/typeahead.js') %}
-  {% js url_for('static', filename='js/bootstrap-select.js') %}
-{% endblock %}
-
+  {%- js url_for('search.static', filename='js/search/typeahead.js') -%}
+  {%- js url_for('static', filename='js/bootstrap-select.js') -%}
+{%- endblock -%}
 {% block title %}
   {{ portalboxes.tp }}
   {{ super() }}
   {{ portalboxes.te }}
 {% endblock %}
-
 {% macro collection_records(collection) %}
 <style>
 .websearch .nav > li > ul > li {
