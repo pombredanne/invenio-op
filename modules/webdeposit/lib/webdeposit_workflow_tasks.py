@@ -43,7 +43,7 @@ from invenio.webuser_flask import current_user
 from invenio.errorlib import register_exception
 from invenio.restapi import error_codes
 from invenio.bibformat import format_record
-from webdeposit_recordhelpers import record_to_draft, make_record, \
+from invenio.webdeposit_recordhelpers import record_to_draft, make_record, \
     deposition_record
 from invenio.bibdocfile import BibRecDocs
 from invenio.bibfield_utils import CoolList
